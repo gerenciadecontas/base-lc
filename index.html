@@ -432,11 +432,12 @@
     /* img edit modal */
     .img-edit-modal {
       position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000;
-      display: flex; align-items: center; justify-content: center;
+      display: flex; align-items: flex-start; justify-content: center;
+      overflow-y: auto; padding: 24px 16px;
     }
     .img-edit-box {
       background: white; border-radius: 12px; padding: 24px; width: 480px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      box-shadow: 0 20px 60px rgba(0,0,0,.3); flex-shrink: 0;
     }
     .img-edit-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--purple-dark); }
     .img-edit-box label { font-size: 12px; font-weight: 600; color: var(--gray-500); display: block; margin-bottom: 6px; }
@@ -496,6 +497,7 @@
     ::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--purple); }
   </style>
+  <script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
 </head>
 <body>
 
@@ -824,7 +826,8 @@
         <button class="btn btn-secondary" style="font-size:12px;color:var(--red)" onclick="clearAnnotations()">🗑️ Limpar marcações</button>
       </div>
     </div>
-    <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Arraste sobre a imagem para desenhar retângulos vermelhos nas áreas que deseja destacar.</div>
+    <div id="ocrStatus" style="font-size:12px;color:var(--purple);margin-bottom:10px;display:none"></div>
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Clique em uma palavra na imagem para circular. Clique novamente para remover.</div>
     <div style="position:relative;border:2px solid #111;border-radius:6px;overflow:hidden;background:#f3f4f6;min-height:200px;cursor:crosshair" id="imgAnnotateWrap">
       <img id="imgAnnotateBase" style="display:block;width:100%;user-select:none;pointer-events:none" />
       <canvas id="imgAnnotateCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
@@ -1450,7 +1453,10 @@ function editImgBlock(fig) {
     placeholder.style.display = 'flex';
   }
   document.getElementById('imgEditModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
 }
+
+let _ocrWords = [];
 
 function initAnnotateCanvas() {
   const img = document.getElementById('imgAnnotateBase');
@@ -1458,11 +1464,61 @@ function initAnnotateCanvas() {
   canvas.width = img.offsetWidth;
   canvas.height = img.offsetHeight;
   redrawAnnotations();
+  canvas.onmousedown = null;
+  canvas.onmousemove = null;
+  canvas.onmouseup = null;
+  canvas.onclick = e => {
+    const r = canvas.getBoundingClientRect();
+    const cx = e.clientX - r.left, cy = e.clientY - r.top;
+    const hit = _ocrWords.find(w => cx >= w.x && cx <= w.x + w.w && cy >= w.y && cy <= w.y + w.h);
+    if (hit) {
+      const already = _annoRects.findIndex(r => r.x===hit.x && r.y===hit.y && r.w===hit.w && r.h===hit.h);
+      if (already >= 0) _annoRects.splice(already, 1);
+      else _annoRects.push({...hit});
+      redrawAnnotations();
+    }
+  };
+  canvas.onmousemove = e => {
+    const r = canvas.getBoundingClientRect();
+    const cx = e.clientX - r.left, cy = e.clientY - r.top;
+    const hit = _ocrWords.find(w => cx >= w.x && cx <= w.x + w.w && cy >= w.y && cy <= w.y + w.h);
+    canvas.style.cursor = hit ? 'pointer' : 'default';
+    redrawAnnotations(null, hit || null);
+  };
+  runOCR();
+}
+
+function runOCR() {
+  const img = document.getElementById('imgAnnotateBase');
+  const canvas = document.getElementById('imgAnnotateCanvas');
+  const statusEl = document.getElementById('ocrStatus');
+  if (statusEl) { statusEl.textContent = '🔍 Lendo texto da imagem...'; statusEl.style.display = 'block'; }
+  _ocrWords = [];
+  Tesseract.recognize(img.src, 'por+eng', { logger: () => {} }).then(({ data }) => {
+    const scaleX = canvas.width / img.naturalWidth;
+    const scaleY = canvas.height / img.naturalHeight;
+    _ocrWords = data.words.filter(w => w.confidence > 40).map(w => ({
+      x: w.bbox.x0 * scaleX, y: w.bbox.y0 * scaleY,
+      w: (w.bbox.x1 - w.bbox.x0) * scaleX,
+      h: (w.bbox.y1 - w.bbox.y0) * scaleY,
+      text: w.text
+    }));
+    if (statusEl) { statusEl.textContent = `✅ ${_ocrWords.length} palavras detectadas — clique para circular`; }
+    redrawAnnotations();
+  }).catch(() => {
+    if (statusEl) statusEl.textContent = '⚠️ OCR não disponível — arraste para marcar manualmente';
+    enableManualDraw();
+  });
+}
+
+function enableManualDraw() {
+  const canvas = document.getElementById('imgAnnotateCanvas');
+  canvas.style.cursor = 'crosshair';
+  canvas.onclick = null;
   canvas.onmousedown = e => {
     const r = canvas.getBoundingClientRect();
     _annoDrawing = true;
     _annoStart = { x: e.clientX - r.left, y: e.clientY - r.top };
-    _annoCurrentRect = null;
   };
   canvas.onmousemove = e => {
     if (!_annoDrawing) return;
@@ -1471,8 +1527,7 @@ function initAnnotateCanvas() {
     _annoCurrentRect = { x: Math.min(_annoStart.x, x), y: Math.min(_annoStart.y, y), w: Math.abs(x - _annoStart.x), h: Math.abs(y - _annoStart.y) };
     redrawAnnotations(_annoCurrentRect);
   };
-  canvas.onmouseup = e => {
-    if (!_annoDrawing) return;
+  canvas.onmouseup = () => {
     _annoDrawing = false;
     if (_annoCurrentRect && _annoCurrentRect.w > 5 && _annoCurrentRect.h > 5) _annoRects.push({..._annoCurrentRect});
     _annoCurrentRect = null;
@@ -1480,16 +1535,27 @@ function initAnnotateCanvas() {
   };
 }
 
-function redrawAnnotations(preview) {
+function redrawAnnotations(preview, hover) {
   const canvas = document.getElementById('imgAnnotateCanvas');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setLineDash([]);
   ctx.strokeStyle = '#EF4444';
   ctx.lineWidth = 3;
-  ctx.setLineDash([]);
-  _annoRects.forEach(r => ctx.strokeRect(r.x, r.y, r.w, r.h));
+  _annoRects.forEach(r => {
+    ctx.fillStyle = 'rgba(239,68,68,0.08)';
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+  });
+  if (hover && !_annoRects.find(r => r.x===hover.x && r.y===hover.y)) {
+    ctx.strokeStyle = 'rgba(239,68,68,0.5)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3,2]);
+    ctx.strokeRect(hover.x, hover.y, hover.w, hover.h);
+  }
   if (preview) {
     ctx.strokeStyle = 'rgba(239,68,68,0.7)';
+    ctx.lineWidth = 2;
     ctx.setLineDash([4, 3]);
     ctx.strokeRect(preview.x, preview.y, preview.w, preview.h);
   }
@@ -1499,10 +1565,11 @@ function clearAnnotations() { _annoRects = []; redrawAnnotations(); }
 
 function closeImgEdit() {
   document.getElementById('imgEditModal').style.display = 'none';
+  document.body.style.overflow = '';
   _currentImgBlock = null;
   _annoRects = [];
   const canvas = document.getElementById('imgAnnotateCanvas');
-  canvas.onmousedown = canvas.onmousemove = canvas.onmouseup = null;
+  canvas.onmousedown = canvas.onmousemove = canvas.onmouseup = canvas.onclick = null;
 }
 
 function imgEditUpload() {

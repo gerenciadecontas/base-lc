@@ -865,7 +865,7 @@
       <span>🔴 Palavras detectadas no passo: <span id="autoWordsList" style="font-weight:700;color:var(--accent)"></span></span>
       <button onclick="applyAutoCircle()" style="background:var(--accent);border:none;color:#0B0B10;font-size:11px;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;white-space:nowrap;flex-shrink:0">🎯 Circular agora</button>
     </div>
-    <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Arraste para desenhar um retângulo sobre a palavra — o sistema encaixa automaticamente. Clique em um retângulo existente para remover.</div>
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Arraste para desenhar um retângulo. Clique em um retângulo existente para remover.</div>
     <div style="position:relative;border:2px solid #111;border-radius:6px;overflow:hidden;background:#f3f4f6;min-height:200px;cursor:crosshair" id="imgAnnotateWrap">
       <img id="imgAnnotateBase" style="display:block;width:100%;user-select:none;pointer-events:none" />
       <canvas id="imgAnnotateCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
@@ -1571,14 +1571,11 @@ function initAnnotateCanvas() {
     _preview = null;
   };
   canvas.onmousemove = e => {
+    if (!_drawing || !_start) return;
     const r = canvas.getBoundingClientRect();
     const cx = e.clientX - r.left, cy = e.clientY - r.top;
-    if (_drawing && _start) {
-      _preview = { x: Math.min(_start.x, cx), y: Math.min(_start.y, cy), w: Math.abs(cx - _start.x), h: Math.abs(cy - _start.y) };
-      redrawAnnotations(_preview);
-    } else {
-      redrawAnnotations();
-    }
+    _preview = { x: Math.min(_start.x, cx), y: Math.min(_start.y, cy), w: Math.abs(cx - _start.x), h: Math.abs(cy - _start.y) };
+    redrawAnnotations(_preview);
   };
   canvas.onmouseup = e => {
     if (!_drawing) return;
@@ -1588,29 +1585,13 @@ function initAnnotateCanvas() {
     const drawn = { x: Math.min(_start.x, cx), y: Math.min(_start.y, cy), w: Math.abs(cx - _start.x), h: Math.abs(cy - _start.y) };
     _preview = null;
 
-    if (drawn.w < 4 && drawn.h < 4) {
-      // clique simples: toggle palavra OCR sob o cursor
-      const hit = _ocrWords.find(w => cx >= w.x && cx <= w.x + w.w && cy >= w.y && cy <= w.y + w.h);
-      if (hit) {
-        const idx = _annoRects.findIndex(ar => ar.x === hit.x && ar.y === hit.y);
-        if (idx >= 0) _annoRects.splice(idx, 1); else _annoRects.push({...hit});
-      }
+    if (drawn.w < 5 && drawn.h < 5) {
+      // clique simples: remove retângulo existente sob o cursor
+      const idx = _annoRects.findIndex(ar => cx >= ar.x && cx <= ar.x + ar.w && cy >= ar.y && cy <= ar.y + ar.h);
+      if (idx >= 0) _annoRects.splice(idx, 1);
     } else {
-      // retângulo desenhado: encontra palavras OCR cujo centro está dentro da área desenhada
-      const matches = _ocrWords.filter(w => {
-        const wcx = w.x + w.w / 2, wcy = w.y + w.h / 2;
-        return wcx >= drawn.x && wcx <= drawn.x + drawn.w && wcy >= drawn.y && wcy <= drawn.y + drawn.h;
-      });
-      if (matches.length > 0) {
-        // encaixa em cada palavra encontrada dentro da área
-        matches.forEach(w => {
-          const idx = _annoRects.findIndex(ar => ar.x === w.x && ar.y === w.y);
-          if (idx >= 0) _annoRects.splice(idx, 1); else _annoRects.push({...w});
-        });
-      } else {
-        // nenhuma palavra OCR dentro: usa o retângulo exato desenhado
-        _annoRects.push(drawn);
-      }
+      // retângulo livre: salva exatamente como desenhado
+      _annoRects.push(drawn);
     }
     redrawAnnotations();
   };
@@ -1633,7 +1614,7 @@ function runOCR() {
       h: (w.bbox.y1 - w.bbox.y0) * scaleY + pad * 2,
       text: w.text, confidence: w.confidence
     }));
-    if (statusEl) { statusEl.textContent = `✅ ${_ocrWords.length} palavras detectadas — desenhe sobre a palavra para circular`; }
+    if (statusEl) { statusEl.textContent = `✅ OCR concluído`; statusEl.style.display = 'none'; }
     // auto-marca palavras bold+maiúscula do passo
     if (_currentImgBlock) {
       const autoWords = _getBoldCapitalWordsFromStep(_currentImgBlock);

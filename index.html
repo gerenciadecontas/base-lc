@@ -50,41 +50,54 @@
 
     /* Light theme */
     [data-theme="light"] {
-      --surface-bg:   #F5F5F7;
-      --surface-0:    #FFFFFF;
-      --surface-1:    #F0F0F5;
-      --surface-2:    #E8E8EF;
-      --surface-3:    #DDDDE8;
-      --border-1:     rgba(0,0,0,0.08);
-      --border-2:     rgba(0,0,0,0.14);
+      --surface-bg:   #EEEEF3;
+      --surface-0:    #F7F7FB;
+      --surface-1:    #EAEAF2;
+      --surface-2:    #DFDFE9;
+      --surface-3:    #D2D2DF;
+      --border-1:     rgba(0,0,0,0.10);
+      --border-2:     rgba(0,0,0,0.18);
       --text-1:       #111118;
-      --text-2:       #44444F;
-      --text-3:       #888899;
-      --accent:       #7C3AED;
+      --text-2:       #3A3A4A;
+      --text-3:       #767688;
+      --accent:       #6D28D9;
       --accent-2:     #0891B2;
-      --ok:           #16A34A;
-      --warn:         #D97706;
-      --err:          #DC2626;
+      --ok:           #15803D;
+      --warn:         #B45309;
+      --err:          #B91C1C;
 
-      --purple:       #7C3AED;
-      --purple-dark:  #6D28D9;
-      --purple-mid:   #7C3AED;
-      --purple-light: rgba(124,58,237,0.10);
-      --purple-100:   rgba(124,58,237,0.06);
-      --yellow:       #D97706;
-      --yellow-light: rgba(217,119,6,0.10);
-      --yellow-dark:  #B45309;
+      --purple:       #6D28D9;
+      --purple-dark:  #5B21B6;
+      --purple-mid:   #6D28D9;
+      --purple-light: rgba(109,40,217,0.10);
+      --purple-100:   rgba(109,40,217,0.06);
+      --yellow:       #B45309;
+      --yellow-light: rgba(180,83,9,0.10);
+      --yellow-dark:  #92400E;
       --white:        #111118;
-      --gray-50:      #F5F5F7;
-      --gray-100:     #F0F0F5;
-      --gray-200:     rgba(0,0,0,0.08);
-      --gray-300:     rgba(0,0,0,0.14);
-      --gray-400:     #888899;
-      --gray-500:     #44444F;
+      --gray-50:      #EEEEF3;
+      --gray-100:     #EAEAF2;
+      --gray-200:     rgba(0,0,0,0.10);
+      --gray-300:     rgba(0,0,0,0.18);
+      --gray-400:     #767688;
+      --gray-500:     #3A3A4A;
       --gray-700:     #111118;
       --gray-900:     #000000;
-      --red:          #DC2626;
-      --green:        #16A34A;
+      --red:          #B91C1C;
+      --green:        #15803D;
+    }
+
+    [data-theme="light"] #btnThemeToggle {
+      color: #111118;
+    }
+    [data-theme="light"] header {
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+    }
+    [data-theme="light"] .admin-nav {
+      border-right: 1px solid var(--border-1);
+    }
+    [data-theme="light"] .img-block {
+      border-color: #C0C0CC;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }

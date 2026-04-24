@@ -1589,10 +1589,11 @@ function runOCR() {
   Tesseract.recognize(img.src, 'por+eng', { logger: () => {} }).then(({ data }) => {
     const scaleX = canvas.width / img.naturalWidth;
     const scaleY = canvas.height / img.naturalHeight;
-    _ocrWords = data.words.filter(w => w.confidence > 40).map(w => ({
-      x: w.bbox.x0 * scaleX, y: w.bbox.y0 * scaleY,
-      w: (w.bbox.x1 - w.bbox.x0) * scaleX,
-      h: (w.bbox.y1 - w.bbox.y0) * scaleY,
+    const pad = 3;
+    _ocrWords = data.words.filter(w => w.confidence > 20).map(w => ({
+      x: w.bbox.x0 * scaleX - pad, y: w.bbox.y0 * scaleY - pad,
+      w: (w.bbox.x1 - w.bbox.x0) * scaleX + pad * 2,
+      h: (w.bbox.y1 - w.bbox.y0) * scaleY + pad * 2,
       text: w.text
     }));
     if (statusEl) { statusEl.textContent = `✅ ${_ocrWords.length} palavras detectadas — clique para circular`; }
@@ -1656,8 +1657,9 @@ function redrawAnnotations(preview, hover) {
   ctx.setLineDash([]);
   ctx.strokeStyle = '#EF4444';
   ctx.lineWidth = 2;
+  ctx.lineJoin = 'miter';
   _annoRects.forEach(r => {
-    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    ctx.strokeRect(Math.round(r.x), Math.round(r.y), Math.round(r.w), Math.round(r.h));
   });
   if (hover && !_annoRects.find(r => r.x===hover.x && r.y===hover.y)) {
     ctx.strokeStyle = 'rgba(239,68,68,0.5)';
@@ -1846,8 +1848,9 @@ function applyImgEdit() {
       const scaleX = img.naturalWidth / document.getElementById('imgAnnotateCanvas').width;
       const scaleY = img.naturalHeight / document.getElementById('imgAnnotateCanvas').height;
       ctx.strokeStyle = '#EF4444';
-      ctx.lineWidth = Math.max(3, 3 * scaleX);
-      _annoRects.forEach(r => ctx.strokeRect(r.x * scaleX, r.y * scaleY, r.w * scaleX, r.h * scaleY));
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'miter';
+      _annoRects.forEach(r => ctx.strokeRect(Math.round(r.x * scaleX), Math.round(r.y * scaleY), Math.round(r.w * scaleX), Math.round(r.h * scaleY)));
       const finalSrc = canvas.toDataURL('image/png');
       setImgBlockContent(finalSrc, caption, note);
     };

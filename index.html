@@ -1732,24 +1732,40 @@ function imgEditPaste() {
 /* Extrai palavras em negrito com inicial maiúscula dos elementos acima da figura */
 function _getBoldCapitalWordsFromStep(fig) {
   const words = new Set();
-  const editor = document.getElementById('editorBody');
-  if (!editor) return words;
-
-  // percorre TODOS os irmãos anteriores à figura (sem limite de figura)
   let el = fig.previousElementSibling;
   while (el) {
-    // 1) <b>, <strong>
-    el.querySelectorAll('b, strong').forEach(b => _addBoldWords(b.textContent, words));
-    // 2) <span style="font-weight:...bold|700|800|900">
-    el.querySelectorAll('span[style]').forEach(s => {
-      const fw = s.style.fontWeight;
-      if (fw === 'bold' || parseInt(fw) >= 700) _addBoldWords(s.textContent, words);
-    });
-    // para no h2 anterior (início do passo)
-    if (el.tagName === 'H2') break;
+    if (el.tagName === 'H2') {
+      // H2 é negrito por CSS. O browser marca as partes NÃO-negrito com font-weight:normal.
+      // As palavras "em negrito" são os nós de texto diretos (sem span) ou spans sem font-weight:normal.
+      _extractBoldWordsFromH2(el, words);
+      break;
+    } else {
+      // Em <p>: busca marcação explícita de negrito
+      el.querySelectorAll('b, strong').forEach(b => _addBoldWords(b.textContent, words));
+      el.querySelectorAll('span[style]').forEach(s => {
+        const fw = s.style.fontWeight;
+        if (fw === 'bold' || parseInt(fw) >= 700) _addBoldWords(s.textContent, words);
+      });
+    }
     el = el.previousElementSibling;
   }
   return words;
+}
+
+function _extractBoldWordsFromH2(h2, words) {
+  h2.childNodes.forEach(node => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      // texto direto no H2 = negrito (padrão do H2)
+      _addBoldWords(node.textContent, words);
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const fw = (node.style && node.style.fontWeight) || '';
+      const isNormal = fw === 'normal' || (fw !== '' && parseInt(fw) < 700);
+      if (!isNormal) {
+        // elemento dentro do H2 sem override para normal = ainda negrito
+        _addBoldWords(node.textContent, words);
+      }
+    }
+  });
 }
 
 function _addBoldWords(text, set) {

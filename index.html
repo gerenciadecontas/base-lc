@@ -1601,20 +1601,19 @@ function runOCR() {
       let autoCount = 0;
       if (autoWords.size > 0) {
         _ocrWords.forEach(w => {
-          const ocrClean = w.text.replace(/[^\wÀ-ɏ]/g,'').toLowerCase();
-          // match exato OU a palavra do passo está contida no token OCR (ex: "Cadastros" vs "Cadastros,")
-          const matched = [...autoWords].some(aw =>
-            ocrClean === aw || ocrClean.startsWith(aw) || aw.startsWith(ocrClean)
-          );
-          if (matched && ocrClean.length > 1 && !_annoRects.find(r => r.x===w.x && r.y===w.y)) {
+          const ocrClean = w.text.replace(/[^a-zA-Z0-9À-ÿ]/g,'').toLowerCase();
+          const matched = ocrClean.length > 1 && [...autoWords].some(aw => _wordsMatch(ocrClean, aw));
+          if (matched && !_annoRects.find(r => r.x===w.x && r.y===w.y)) {
             _annoRects.push({...w});
             autoCount++;
           }
         });
+        const wordList = [...autoWords].join(', ');
         if (statusEl) {
           statusEl.textContent = autoCount > 0
-            ? `✅ ${_ocrWords.length} detectadas — ${autoCount} palavra(s) circulada(s) automaticamente`
-            : `✅ ${_ocrWords.length} detectadas — palavras do passo não encontradas na imagem`;
+            ? `✅ ${_ocrWords.length} detectadas — circulou automaticamente: ${wordList}`
+            : `✅ ${_ocrWords.length} detectadas — buscando: [${wordList}] — não encontradas na imagem`;
+          statusEl.style.display = 'block';
         }
       }
     }
@@ -1754,12 +1753,22 @@ function _getBoldCapitalWordsFromStep(fig) {
 
 function _addBoldWords(text, set) {
   text.trim().split(/\s+/).forEach(token => {
-    // remove pontuação mas mantém acentos
-    const clean = token.replace(/[^\wÀ-ɏ]/g, '');
-    if (clean.length > 1 && /^[A-ZÀ-ɏ]/.test(clean)) {
+    const clean = token.replace(/[^a-zA-Z0-9À-ÿ]/g, '');
+    if (clean.length > 1 && /^[A-ZÀ-Ÿ]/.test(clean)) {
       set.add(clean.toLowerCase());
     }
   });
+}
+
+/* Verifica se duas palavras são similares (aceita plural, sufixos, etc.) */
+function _wordsMatch(ocrWord, stepWord) {
+  if (ocrWord === stepWord) return true;
+  // um contém o outro (cobre plural: "cadastro" ⊂ "cadastros")
+  if (ocrWord.startsWith(stepWord) || stepWord.startsWith(ocrWord)) return true;
+  // similaridade: diferença de até 2 caracteres no final (sufixos)
+  const minLen = Math.min(ocrWord.length, stepWord.length);
+  if (minLen >= 4 && ocrWord.substring(0, minLen - 1) === stepWord.substring(0, minLen - 1)) return true;
+  return false;
 }
 
 /* Atualiza o painel de palavras detectadas no modal */

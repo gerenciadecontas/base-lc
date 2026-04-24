@@ -485,13 +485,13 @@
     .img-edit-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
 
     .template-card {
-      border: 1.5px solid var(--gray-200); border-radius: 10px; padding: 18px;
-      cursor: pointer; transition: all .2s; background: white;
+      border: 1.5px solid var(--border-1); border-radius: 10px; padding: 16px;
+      cursor: pointer; transition: all .2s; background: var(--surface-2);
     }
-    .template-card:hover { border-color: var(--purple); box-shadow: 0 4px 16px rgba(124,58,237,.12); transform: translateY(-2px); }
-    .template-icon { font-size: 24px; margin-bottom: 8px; }
-    .template-name { font-size: 14px; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
-    .template-desc { font-size: 12px; color: var(--gray-400); }
+    .template-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(167,139,250,.15); transform: translateY(-2px); }
+    .template-icon { font-size: 22px; margin-bottom: 8px; }
+    .template-name { font-size: 13px; font-weight: 700; color: var(--text-1); margin-bottom: 4px; }
+    .template-desc { font-size: 11.5px; color: var(--text-3); }
 
     .btn-login-submit {
       width: 100%; padding: 12px; background: var(--purple); color: white; border: none;
@@ -903,6 +903,32 @@
     </div>
     <div style="overflow-y:auto;padding:16px 20px 20px;display:flex;flex-direction:column;gap:20px" id="templateModalBody">
       <!-- preenchido por renderTemplateModal() -->
+    </div>
+  </div>
+</div>
+
+<!-- Modal: editar estrutura do template -->
+<div class="overlay hidden" id="editTemplateOverlay" onclick="if(event.target===this)closeEditTemplateModal()">
+  <div class="modal-box" style="max-width:740px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:90vh">
+    <div class="modal-header" style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <h2 style="font-size:15px;font-weight:700" id="editTemplateTitleLabel">Editar Template</h2>
+      <button onclick="closeEditTemplateModal()" style="background:none;border:none;color:var(--text-2);font-size:20px;cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;flex:1;overflow:hidden">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px">Nome do Template</label>
+        <input id="editTemplateNameInput" class="form-input" type="text" style="width:100%">
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+        <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px">Estrutura</label>
+        <div id="editTemplateEditor" contenteditable="true"
+          style="flex:1;overflow-y:auto;border:1px solid var(--border-2);border-radius:8px;padding:16px;background:var(--surface-1);color:var(--text-1);font-size:13.5px;line-height:1.7;min-height:320px;outline:none">
+        </div>
+      </div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border-1);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0">
+      <button onclick="closeEditTemplateModal()" class="btn btn-secondary">Cancelar</button>
+      <button onclick="saveEditedTemplate()" class="btn btn-primary">Salvar Alterações</button>
     </div>
   </div>
 </div>
@@ -1869,13 +1895,11 @@ function editCustomTemplate(i) {
   const tpl = getCustomTemplates()[i];
   if (!tpl) return;
   _editingTemplateIndex = i;
-  document.getElementById('fieldTitle').value = tpl.title;
-  document.getElementById('editorBody').innerHTML = tpl.content;
-  document.getElementById('saveTemplateName').value = tpl.name;
-  document.getElementById('saveTemplateTitle').textContent = 'Atualizar Template';
-  document.getElementById('saveTemplateBtnLabel').textContent = 'Atualizar Template';
+  document.getElementById('editTemplateTitleLabel').textContent = `Editar — ${tpl.name}`;
+  document.getElementById('editTemplateNameInput').value = tpl.name;
+  document.getElementById('editTemplateEditor').innerHTML = tpl.content;
   closeTemplateModal();
-  document.getElementById('saveTemplateOverlay').classList.remove('hidden');
+  document.getElementById('editTemplateOverlay').classList.remove('hidden');
   toast('Edite o conteúdo e clique em "Atualizar Template" para salvar.', 'success');
 }
 
@@ -1909,6 +1933,27 @@ function saveCurrentAsTemplate() {
   closeSaveTemplatePrompt();
 }
 
+function closeEditTemplateModal() {
+  document.getElementById('editTemplateOverlay').classList.add('hidden');
+  _editingTemplateIndex = -1;
+}
+
+function saveEditedTemplate() {
+  const name = document.getElementById('editTemplateNameInput').value.trim();
+  if (!name) { toast('Informe o nome do template.', 'error'); return; }
+  const content = document.getElementById('editTemplateEditor').innerHTML;
+  if (_editingTemplateIndex === -2) {
+    TEMPLATES['tutorial-imagens'].content = content;
+    toast('Modelo LC ERP atualizado!', 'success');
+  } else if (_editingTemplateIndex >= 0) {
+    const arr = getCustomTemplates();
+    arr[_editingTemplateIndex] = { name, title: arr[_editingTemplateIndex].title, content };
+    setCustomTemplates(arr);
+    toast('Template atualizado!', 'success');
+  }
+  closeEditTemplateModal();
+}
+
 function newBlankTemplate() {
   _editingTemplateIndex = -1;
   document.getElementById('fieldTitle').value = '';
@@ -1922,16 +1967,12 @@ function newBlankTemplate() {
 }
 
 function editBuiltinTemplate() {
-  const tpl = TEMPLATES['tutorial-imagens'];
-  _editingTemplateIndex = -2; // código especial para builtin
-  document.getElementById('fieldTitle').value = tpl.title;
-  document.getElementById('editorBody').innerHTML = tpl.content;
-  document.getElementById('saveTemplateName').value = 'Modelo LC ERP';
-  document.getElementById('saveTemplateTitle').textContent = 'Editar Modelo LC ERP';
-  document.getElementById('saveTemplateBtnLabel').textContent = 'Salvar Alterações';
+  _editingTemplateIndex = -2;
+  document.getElementById('editTemplateTitleLabel').textContent = 'Editar — Modelo LC ERP';
+  document.getElementById('editTemplateNameInput').value = 'Modelo LC ERP';
+  document.getElementById('editTemplateEditor').innerHTML = TEMPLATES['tutorial-imagens'].content;
   closeTemplateModal();
-  document.getElementById('saveTemplateOverlay').classList.remove('hidden');
-  toast('Edite o conteúdo e clique em "Salvar Alterações".', 'success');
+  document.getElementById('editTemplateOverlay').classList.remove('hidden');
 }
 
 // mantém compatibilidade com chamadas antigas

@@ -1079,6 +1079,17 @@ const SESSION_KEY   = 'lc_session';
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'admin123';
 
+// Limpa artigos de demonstração se ainda existirem do seed antigo
+(function clearDemoArticles() {
+  const demoTitles = ['Como fazer instalação do banco de dados personalizada'];
+  const raw = localStorage.getItem(ARTICLES_KEY);
+  if (!raw) return;
+  const arts = JSON.parse(raw);
+  if (arts.some(a => demoTitles.some(t => a.title && a.title.startsWith(t)))) {
+    localStorage.removeItem(ARTICLES_KEY);
+  }
+})();
+
 function getArticles() {
   const raw = localStorage.getItem(ARTICLES_KEY);
   if (raw) return JSON.parse(raw);
@@ -1112,14 +1123,7 @@ function defaultData() {
       { id:9, name:'Passo a passo', order:9 },
       { id:10,name:'Rotinas', order:10 },
     ],
-    articles: [
-      { id:1, title:'Como fazer instalação do banco de dados personalizada (Parte 1)', description:'Guia completo para instalação do banco de dados.', categoryId:1, status:'published', order:1, views:3298, date:'29/09/2022', content:'<h2>Instalação do Banco de Dados - Parte 1</h2><p>Este guia apresenta o processo completo de instalação personalizada do banco de dados do sistema LC.</p><h3>Pré-requisitos</h3><ul><li>Windows 10 ou superior</li><li>Mínimo de 4 GB de RAM</li><li>20 GB livres em disco</li><li>Permissões de administrador</li></ul><p>Siga as etapas abaixo para realizar a instalação corretamente.</p>' },
-      { id:2, title:'Como fazer instalação do banco de dados personalizada (Parte 2)', description:'', categoryId:1, status:'published', order:2, views:1853, date:'29/09/2022', content:'<h2>Instalação - Parte 2</h2><p>Continuação do processo de instalação personalizada.</p>' },
-      { id:3, title:'Como fazer instalação do banco de dados personalizada (Parte 3)', description:'', categoryId:1, status:'published', order:3, views:1675, date:'29/09/2022', content:'<h2>Instalação - Parte 3</h2><p>Terceira parte do processo de instalação.</p>' },
-      { id:4, title:'Como fazer instalação do banco de dados personalizada (Parte 4)', description:'', categoryId:1, status:'published', order:4, views:1508, date:'29/09/2022', content:'<h2>Instalação - Parte 4</h2><p>Finalização e testes do banco de dados instalado.</p>' },
-      { id:5, title:'Como desinstalar o banco de dados da forma correta', description:'', categoryId:1, status:'published', order:5, views:2668, date:'12/09/2022', content:'<h2>Desinstalação do Banco de Dados</h2><p>Guia para remover o banco de dados corretamente sem deixar resíduos.</p>' },
-      { id:6, title:'Como redefinir a senha do Banco de Dados', description:'', categoryId:1, status:'published', order:6, views:739, date:'02/10/2023', content:'<h2>Redefinição de Senha</h2><p>Passos para redefinir a senha do banco de dados com segurança.</p>' },
-    ]
+    articles: []
   };
 }
 

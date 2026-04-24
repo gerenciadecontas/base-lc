@@ -1598,15 +1598,23 @@ function runOCR() {
     // auto-marca palavras bold+maiúscula do passo
     if (_currentImgBlock) {
       const autoWords = _getBoldCapitalWordsFromStep(_currentImgBlock);
+      let autoCount = 0;
       if (autoWords.size > 0) {
         _ocrWords.forEach(w => {
-          const clean = w.text.replace(/[^a-zA-ZÀ-ú]/g,'').toLowerCase();
-          if (autoWords.has(clean) && !_annoRects.find(r => r.x===w.x && r.y===w.y)) {
+          const ocrClean = w.text.replace(/[^\wÀ-ɏ]/g,'').toLowerCase();
+          // match exato OU a palavra do passo está contida no token OCR (ex: "Cadastros" vs "Cadastros,")
+          const matched = [...autoWords].some(aw =>
+            ocrClean === aw || ocrClean.startsWith(aw) || aw.startsWith(ocrClean)
+          );
+          if (matched && ocrClean.length > 1 && !_annoRects.find(r => r.x===w.x && r.y===w.y)) {
             _annoRects.push({...w});
+            autoCount++;
           }
         });
-        if (_annoRects.length > 0 && statusEl) {
-          statusEl.textContent += ` — ${_annoRects.length} palavra(s) circulada(s) automaticamente`;
+        if (statusEl) {
+          statusEl.textContent = autoCount > 0
+            ? `✅ ${_ocrWords.length} detectadas — ${autoCount} palavra(s) circulada(s) automaticamente`
+            : `✅ ${_ocrWords.length} detectadas — palavras do passo não encontradas na imagem`;
         }
       }
     }
@@ -1724,21 +1732,34 @@ function imgEditPaste() {
 /* Extrai palavras em negrito com inicial maiúscula dos elementos acima da figura */
 function _getBoldCapitalWordsFromStep(fig) {
   const words = new Set();
-  // percorre todos os irmãos anteriores até encontrar outra figure ou o início
+  const editor = document.getElementById('editorBody');
+  if (!editor) return words;
+
+  // percorre TODOS os irmãos anteriores à figura (sem limite de figura)
   let el = fig.previousElementSibling;
-  while (el && el.tagName !== 'FIGURE') {
-    // busca <b> e <strong> dentro do elemento
-    el.querySelectorAll('b, strong').forEach(b => {
-      b.textContent.trim().split(/\s+/).forEach(token => {
-        const clean = token.replace(/[^a-zA-ZÀ-úA-Z]/g, '');
-        if (clean.length > 1 && /^[A-ZÁÉÍÓÚÀÂÊÔÃÕÇ]/.test(clean)) {
-          words.add(clean.toLowerCase());
-        }
-      });
+  while (el) {
+    // 1) <b>, <strong>
+    el.querySelectorAll('b, strong').forEach(b => _addBoldWords(b.textContent, words));
+    // 2) <span style="font-weight:...bold|700|800|900">
+    el.querySelectorAll('span[style]').forEach(s => {
+      const fw = s.style.fontWeight;
+      if (fw === 'bold' || parseInt(fw) >= 700) _addBoldWords(s.textContent, words);
     });
+    // para no h2 anterior (início do passo)
+    if (el.tagName === 'H2') break;
     el = el.previousElementSibling;
   }
   return words;
+}
+
+function _addBoldWords(text, set) {
+  text.trim().split(/\s+/).forEach(token => {
+    // remove pontuação mas mantém acentos
+    const clean = token.replace(/[^\wÀ-ɏ]/g, '');
+    if (clean.length > 1 && /^[A-ZÀ-ɏ]/.test(clean)) {
+      set.add(clean.toLowerCase());
+    }
+  });
 }
 
 /* Atualiza o painel de palavras detectadas no modal */
@@ -1752,6 +1773,9 @@ function _updateAutoWordsPanel() {
     panel.style.display = 'block';
   } else {
     panel.style.display = 'none';
+    // debug: mostra se não achou nada
+    const statusEl = document.getElementById('ocrStatus');
+    if (statusEl) { statusEl.textContent = '⚠️ Nenhuma palavra em negrito+maiúscula encontrada no passo acima.'; statusEl.style.display = 'block'; }
   }
 }
 

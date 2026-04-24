@@ -879,6 +879,7 @@
     </div>
     <div class="img-edit-actions" style="margin-top:16px">
       <button class="btn btn-secondary" onclick="closeImgEdit()">Cancelar</button>
+      <button class="btn" onclick="removeImgFromBlock()" style="background:rgba(248,113,113,.12);color:var(--err);border:1px solid rgba(248,113,113,.3)" id="btnRemoveImg">🗑 Remover imagem</button>
       <button class="btn btn-primary" onclick="applyImgEdit()">✅ Salvar imagem</button>
     </div>
   </div>
@@ -1510,6 +1511,8 @@ function editImgBlock(fig) {
   document.getElementById('imgEditNote').value = note ? (note.textContent.replace('⚠️ ','')) : '';
   const baseImg = document.getElementById('imgAnnotateBase');
   const placeholder = document.getElementById('imgAnnotatePlaceholder');
+  // mostra botão remover só quando já tem imagem
+  document.getElementById('btnRemoveImg').style.display = existingImg ? 'inline-flex' : 'none';
   if (existingImg) {
     baseImg.src = existingImg.src;
     baseImg.style.display = 'block';
@@ -1522,6 +1525,22 @@ function editImgBlock(fig) {
   }
   document.getElementById('imgEditModal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
+}
+
+function removeImgFromBlock() {
+  if (!_currentImgBlock) return;
+  if (!confirm('Remover a imagem deste bloco?')) return;
+  const img = _currentImgBlock.querySelector('img');
+  if (img) img.remove();
+  // restaura o placeholder
+  if (!_currentImgBlock.querySelector('.img-placeholder')) {
+    const ph = document.createElement('div');
+    ph.className = 'img-placeholder';
+    ph.innerHTML = `<svg width="32" height="32" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg><span>Clique para inserir imagem</span>`;
+    _currentImgBlock.insertBefore(ph, _currentImgBlock.firstChild);
+  }
+  closeImgEdit();
+  toast('Imagem removida.', 'success');
 }
 
 let _ocrWords = [];

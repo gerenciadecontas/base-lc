@@ -1655,10 +1655,8 @@ function redrawAnnotations(preview, hover) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setLineDash([]);
   ctx.strokeStyle = '#EF4444';
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
   _annoRects.forEach(r => {
-    ctx.fillStyle = 'rgba(239,68,68,0.08)';
-    ctx.fillRect(r.x, r.y, r.w, r.h);
     ctx.strokeRect(r.x, r.y, r.w, r.h);
   });
   if (hover && !_annoRects.find(r => r.x===hover.x && r.y===hover.y)) {

@@ -902,7 +902,7 @@
 <div class="overlay hidden" id="saveTemplateOverlay" onclick="if(event.target===this)closeSaveTemplatePrompt()">
   <div class="modal-box" style="max-width:420px">
     <div class="modal-header">
-      <h2 style="font-size:15px;font-weight:700">Salvar como Template</h2>
+      <h2 style="font-size:15px;font-weight:700" id="saveTemplateTitle">Salvar como Template</h2>
       <button onclick="closeSaveTemplatePrompt()" style="background:none;border:none;color:var(--text-2);font-size:20px;cursor:pointer;line-height:1">&times;</button>
     </div>
     <div class="modal-body" style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
@@ -913,7 +913,7 @@
       <p style="font-size:12.5px;color:var(--text-3)">O conteúdo atual do editor será salvo como template reutilizável.</p>
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button onclick="closeSaveTemplatePrompt()" class="btn btn-secondary">Cancelar</button>
-        <button onclick="saveCurrentAsTemplate()" class="btn btn-primary">Salvar Template</button>
+        <button onclick="saveCurrentAsTemplate()" class="btn btn-primary" id="saveTemplateBtnLabel">Salvar Template</button>
       </div>
     </div>
   </div>
@@ -1769,8 +1769,14 @@ function renderTemplateModal() {
         <div class="template-icon">📄</div>
         <div class="template-name">${tpl.name}</div>
         <div class="template-desc">Template personalizado</div>
-        <button onclick="event.stopPropagation();deleteCustomTemplate(${i})" title="Excluir"
-          style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text-3);cursor:pointer;padding:2px;border-radius:4px;line-height:1;font-size:14px">✕</button>
+        <div style="position:absolute;top:8px;right:8px;display:flex;gap:4px">
+          <button onclick="event.stopPropagation();editCustomTemplate(${i})" title="Editar"
+            style="background:none;border:none;color:var(--text-3);cursor:pointer;padding:3px;border-radius:4px;line-height:1;display:flex;align-items:center" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-3)'">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button onclick="event.stopPropagation();deleteCustomTemplate(${i})" title="Excluir"
+            style="background:none;border:none;color:var(--text-3);cursor:pointer;padding:3px;border-radius:4px;line-height:1;font-size:13px" onmouseover="this.style.color='var(--err)'" onmouseout="this.style.color='var(--text-3)'">✕</button>
+        </div>
       </div>`;
     });
     html += `</div></div>`;
@@ -1835,28 +1841,54 @@ function deleteCustomTemplate(i) {
   toast('Template excluído.', 'success');
 }
 
+let _editingTemplateIndex = -1; // -1 = novo, >= 0 = editando existente
+
 function openSaveTemplatePrompt() {
+  _editingTemplateIndex = -1;
   document.getElementById('saveTemplateName').value = document.getElementById('fieldTitle').value || '';
+  document.getElementById('saveTemplateTitle').textContent = 'Salvar como Template';
+  document.getElementById('saveTemplateBtnLabel').textContent = 'Salvar Template';
   closeTemplateModal();
   document.getElementById('saveTemplateOverlay').classList.remove('hidden');
 }
 
+function editCustomTemplate(i) {
+  const tpl = getCustomTemplates()[i];
+  if (!tpl) return;
+  _editingTemplateIndex = i;
+  document.getElementById('fieldTitle').value = tpl.title;
+  document.getElementById('editorBody').innerHTML = tpl.content;
+  document.getElementById('saveTemplateName').value = tpl.name;
+  document.getElementById('saveTemplateTitle').textContent = 'Atualizar Template';
+  document.getElementById('saveTemplateBtnLabel').textContent = 'Atualizar Template';
+  closeTemplateModal();
+  document.getElementById('saveTemplateOverlay').classList.remove('hidden');
+  toast('Edite o conteúdo e clique em "Atualizar Template" para salvar.', 'success');
+}
+
 function closeSaveTemplatePrompt() {
   document.getElementById('saveTemplateOverlay').classList.add('hidden');
+  _editingTemplateIndex = -1;
 }
 
 function saveCurrentAsTemplate() {
   const name = document.getElementById('saveTemplateName').value.trim();
   if (!name) { toast('Informe um nome para o template.', 'error'); return; }
   const arr = getCustomTemplates();
-  arr.push({
+  const entry = {
     name,
     title: document.getElementById('fieldTitle').value,
     content: document.getElementById('editorBody').innerHTML
-  });
+  };
+  if (_editingTemplateIndex >= 0 && _editingTemplateIndex < arr.length) {
+    arr[_editingTemplateIndex] = entry;
+    toast('Template atualizado!', 'success');
+  } else {
+    arr.push(entry);
+    toast('Template salvo com sucesso!', 'success');
+  }
   setCustomTemplates(arr);
   closeSaveTemplatePrompt();
-  toast('Template salvo com sucesso!', 'success');
 }
 
 // mantém compatibilidade com chamadas antigas

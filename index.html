@@ -276,13 +276,15 @@
     .editor-label { font-size: 13px; font-weight: 600; color: var(--purple-dark); margin-bottom: 6px; display: block; }
     .editor-shell {
       display: flex; border: 1.5px solid var(--gray-200); border-radius: 8px;
-      overflow: hidden; transition: border-color .2s, box-shadow .2s; background: white;
+      overflow: visible; transition: border-color .2s, box-shadow .2s; background: white;
+      position: relative;
     }
     .editor-shell:focus-within { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
 
     .editor-body {
       flex: 1; min-height: 320px; padding: 16px; outline: none;
       font-size: 14px; line-height: 1.8; color: var(--gray-900); overflow-y: auto;
+      border-radius: 8px 0 0 8px;
     }
     .editor-body:empty::before { content: attr(data-placeholder); color: var(--gray-400); pointer-events: none; }
     .editor-body h1 { font-size: 22px; color: var(--purple-dark); margin: 16px 0 8px; }
@@ -303,6 +305,8 @@
     .editor-toolbar {
       width: 52px; background: var(--gray-50); border-left: 1px solid var(--gray-200);
       display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 2px; flex-shrink: 0;
+      position: sticky; top: 54px; align-self: flex-start;
+      border-radius: 0 8px 8px 0;
     }
     .toolbar-sep { width: 28px; height: 1px; background: var(--gray-200); margin: 4px 0; }
     .toolbar-btn {

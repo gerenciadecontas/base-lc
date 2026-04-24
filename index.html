@@ -909,23 +909,29 @@
 
 <!-- Modal: editar estrutura do template -->
 <div class="overlay hidden" id="editTemplateOverlay" onclick="if(event.target===this)closeEditTemplateModal()">
-  <div class="modal-box" style="max-width:740px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:90vh">
+  <div class="modal-box" style="max-width:740px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:92vh">
     <div class="modal-header" style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <h2 style="font-size:15px;font-weight:700" id="editTemplateTitleLabel">Editar Template</h2>
       <button onclick="closeEditTemplateModal()" style="background:none;border:none;color:var(--text-2);font-size:20px;cursor:pointer;line-height:1">&times;</button>
     </div>
-    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;flex:1;overflow:hidden">
-      <div>
-        <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px">Nome do Template</label>
-        <input id="editTemplateNameInput" class="form-input" type="text" style="width:100%">
-      </div>
-      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
-        <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px">Estrutura</label>
-        <div id="editTemplateEditor" contenteditable="true"
-          style="flex:1;overflow-y:auto;border:1px solid var(--border-2);border-radius:8px;padding:16px;background:var(--surface-1);color:var(--text-1);font-size:13.5px;line-height:1.7;min-height:320px;outline:none">
-        </div>
-      </div>
+
+    <div style="padding:14px 20px 8px;flex-shrink:0">
+      <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:6px">Nome do Template</label>
+      <input id="editTemplateNameInput" class="form-input" type="text" style="width:100%">
     </div>
+
+    <div style="padding:8px 20px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+      <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em">Passos</label>
+      <button onclick="addStepToTemplateModal()" style="background:var(--accent);border:none;color:#0B0B10;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:5px">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Adicionar Passo
+      </button>
+    </div>
+
+    <div id="editTemplateStepsList" style="flex:1;overflow-y:auto;padding:4px 20px 16px;display:flex;flex-direction:column;gap:8px">
+      <!-- passos renderizados por renderTemplateSteps() -->
+    </div>
+
     <div style="padding:12px 20px;border-top:1px solid var(--border-1);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0">
       <button onclick="closeEditTemplateModal()" class="btn btn-secondary">Cancelar</button>
       <button onclick="saveEditedTemplate()" class="btn btn-primary">Salvar Alterações</button>
@@ -1895,12 +1901,12 @@ function editCustomTemplate(i) {
   const tpl = getCustomTemplates()[i];
   if (!tpl) return;
   _editingTemplateIndex = i;
+  _tplSteps = _parseStepsFromContent(tpl.content);
   document.getElementById('editTemplateTitleLabel').textContent = `Editar — ${tpl.name}`;
   document.getElementById('editTemplateNameInput').value = tpl.name;
-  document.getElementById('editTemplateEditor').innerHTML = tpl.content;
   closeTemplateModal();
   document.getElementById('editTemplateOverlay').classList.remove('hidden');
-  toast('Edite o conteúdo e clique em "Atualizar Template" para salvar.', 'success');
+  renderTemplateSteps();
 }
 
 function closeSaveTemplatePrompt() {
@@ -1933,21 +1939,83 @@ function saveCurrentAsTemplate() {
   closeSaveTemplatePrompt();
 }
 
+let _tplSteps = []; // array de textos de cada passo
+
+function _imgBlockHTML() {
+  return `<figure class="img-block" onclick="editImgBlock(this)"><div class="img-placeholder"><svg width="32" height="32" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg><span>Clique para inserir imagem</span></div><figcaption class="img-caption" contenteditable="false">Legenda da imagem...</figcaption></figure>`;
+}
+
+function _parseStepsFromContent(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const steps = [];
+  div.querySelectorAll('h2').forEach(h2 => {
+    if (/^\d+:/.test(h2.textContent.trim())) {
+      // pega o texto do próximo <p> se existir
+      const next = h2.nextElementSibling;
+      steps.push((next && next.tagName === 'P') ? next.innerHTML.replace('<br>', '') : '');
+    }
+  });
+  return steps.length > 0 ? steps : ['', '', '', '', '', '', '', '', '', ''];
+}
+
+function _buildContentFromSteps(steps) {
+  return `<p>Neste artigo será apresentado</p>` +
+    steps.map((text, i) =>
+      `<h2>${i + 1}:</h2><p>${text || ''}</p>${_imgBlockHTML()}`
+    ).join('');
+}
+
+function renderTemplateSteps() {
+  const list = document.getElementById('editTemplateStepsList');
+  list.innerHTML = '';
+  _tplSteps.forEach((text, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;background:var(--surface-2);border:1px solid var(--border-1);border-radius:8px;padding:12px 14px';
+    row.innerHTML = `
+      <div style="flex-shrink:0;width:28px;height:28px;background:rgba(167,139,250,.15);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent)">${i + 1}</div>
+      <input type="text" value="${text.replace(/"/g,'&quot;')}" placeholder="Descreva o passo ${i + 1}..."
+        style="flex:1;background:none;border:none;outline:none;color:var(--text-1);font-size:13px;padding:4px 0"
+        oninput="_tplSteps[${i}]=this.value">
+      <button onclick="deleteTemplateStep(${i})" title="Excluir passo"
+        style="background:none;border:none;color:var(--text-3);cursor:pointer;padding:4px;border-radius:4px;display:flex;align-items:center;flex-shrink:0"
+        onmouseover="this.style.color='var(--err)'" onmouseout="this.style.color='var(--text-3)'">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6"/><path d="M14,11v6"/><path d="M9,6V4h6v2"/></svg>
+      </button>`;
+    list.appendChild(row);
+  });
+}
+
+function addStepToTemplateModal() {
+  _tplSteps.push('');
+  renderTemplateSteps();
+  // scroll para o final
+  const list = document.getElementById('editTemplateStepsList');
+  list.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function deleteTemplateStep(i) {
+  if (_tplSteps.length <= 1) { toast('O template precisa ter ao menos 1 passo.', 'error'); return; }
+  _tplSteps.splice(i, 1);
+  renderTemplateSteps();
+}
+
 function closeEditTemplateModal() {
   document.getElementById('editTemplateOverlay').classList.add('hidden');
   _editingTemplateIndex = -1;
+  _tplSteps = [];
 }
 
 function saveEditedTemplate() {
   const name = document.getElementById('editTemplateNameInput').value.trim();
   if (!name) { toast('Informe o nome do template.', 'error'); return; }
-  const content = document.getElementById('editTemplateEditor').innerHTML;
+  const content = _buildContentFromSteps(_tplSteps);
   if (_editingTemplateIndex === -2) {
     TEMPLATES['tutorial-imagens'].content = content;
     toast('Modelo LC ERP atualizado!', 'success');
   } else if (_editingTemplateIndex >= 0) {
     const arr = getCustomTemplates();
-    arr[_editingTemplateIndex] = { name, title: arr[_editingTemplateIndex].title, content };
+    arr[_editingTemplateIndex] = { name, title: arr[_editingTemplateIndex]?.title || name, content };
     setCustomTemplates(arr);
     toast('Template atualizado!', 'success');
   }
@@ -1968,11 +2036,12 @@ function newBlankTemplate() {
 
 function editBuiltinTemplate() {
   _editingTemplateIndex = -2;
+  _tplSteps = _parseStepsFromContent(TEMPLATES['tutorial-imagens'].content);
   document.getElementById('editTemplateTitleLabel').textContent = 'Editar — Modelo LC ERP';
   document.getElementById('editTemplateNameInput').value = 'Modelo LC ERP';
-  document.getElementById('editTemplateEditor').innerHTML = TEMPLATES['tutorial-imagens'].content;
   closeTemplateModal();
   document.getElementById('editTemplateOverlay').classList.remove('hidden');
+  renderTemplateSteps();
 }
 
 // mantém compatibilidade com chamadas antigas

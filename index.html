@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* Dark theme */
+      /* Dark theme (padrão) */
       --surface-bg:   #121216;
       --surface-0:    #17171C;
       --surface-1:    #1E1E24;
@@ -46,6 +46,45 @@
       --gray-900:     #FFFFFF;
       --red:          #F87171;
       --green:        #4ADE80;
+    }
+
+    /* Light theme */
+    [data-theme="light"] {
+      --surface-bg:   #F5F5F7;
+      --surface-0:    #FFFFFF;
+      --surface-1:    #F0F0F5;
+      --surface-2:    #E8E8EF;
+      --surface-3:    #DDDDE8;
+      --border-1:     rgba(0,0,0,0.08);
+      --border-2:     rgba(0,0,0,0.14);
+      --text-1:       #111118;
+      --text-2:       #44444F;
+      --text-3:       #888899;
+      --accent:       #7C3AED;
+      --accent-2:     #0891B2;
+      --ok:           #16A34A;
+      --warn:         #D97706;
+      --err:          #DC2626;
+
+      --purple:       #7C3AED;
+      --purple-dark:  #6D28D9;
+      --purple-mid:   #7C3AED;
+      --purple-light: rgba(124,58,237,0.10);
+      --purple-100:   rgba(124,58,237,0.06);
+      --yellow:       #D97706;
+      --yellow-light: rgba(217,119,6,0.10);
+      --yellow-dark:  #B45309;
+      --white:        #111118;
+      --gray-50:      #F5F5F7;
+      --gray-100:     #F0F0F5;
+      --gray-200:     rgba(0,0,0,0.08);
+      --gray-300:     rgba(0,0,0,0.14);
+      --gray-400:     #888899;
+      --gray-500:     #44444F;
+      --gray-700:     #111118;
+      --gray-900:     #000000;
+      --red:          #DC2626;
+      --green:        #16A34A;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -561,6 +600,11 @@
   </div>
 
   <div class="header-right">
+    <!-- theme toggle -->
+    <button class="btn-login" id="btnThemeToggle" onclick="toggleTheme()" title="Alternar tema" style="padding:6px 10px">
+      <svg id="themeIconDark" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+      <svg id="themeIconLight" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
     <!-- login / logout button -->
     <button class="btn-login" id="btnLoginToggle" onclick="handleLoginClick()">
       <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -1137,11 +1181,28 @@ document.getElementById('loginOverlay').addEventListener('click', e => {
 });
 
 /* ══════════════════════════════════════
+   THEME TOGGLE
+══════════════════════════════════════ */
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const isDark = theme === 'dark';
+  document.getElementById('themeIconDark').style.display  = isDark ? 'none'  : 'block';
+  document.getElementById('themeIconLight').style.display = isDark ? 'block' : 'none';
+  localStorage.setItem('lc_theme', theme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+/* ══════════════════════════════════════
    PUBLIC — init
 ══════════════════════════════════════ */
 let pubState = { categoryId: null, articleId: null, sidebarOpen: true, openCats: new Set([1]) };
 
 function pubInit() {
+  applyTheme(localStorage.getItem('lc_theme') || 'dark');
   renderSidebar();
   renderHome();
   if (isAdmin) enterAdmin();

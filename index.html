@@ -266,6 +266,7 @@
     .admin-nav {
       width: 220px; background: var(--surface-0); border-right: 1px solid var(--border-1);
       flex-shrink: 0; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px;
+      height: calc(100vh - 56px); overflow-y: auto;
     }
     .admin-nav-title { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .1em; padding: 8px 10px 4px; }
     .admin-nav-btn {
@@ -536,63 +537,39 @@
     /* ════════════════════════════
        CHAT FLYOUT
     ════════════════════════════ */
-    .chat-trigger {
-      position: fixed;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 500;
-      background: var(--surface-1);
-      border: 1px solid var(--border-2);
-      border-right: none;
-      border-radius: 12px 0 0 12px;
-      padding: 14px 10px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      color: var(--text-2);
-      transition: background .15s, color .15s;
-      box-shadow: -4px 0 20px rgba(0,0,0,.3);
+
+    /* Botão no rodapé do admin-nav */
+    .chat-nav-btn {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+      padding: 7px 10px; background: none; border: 1px solid transparent; cursor: pointer;
+      font-size: 12.5px; color: var(--text-2); text-align: left;
+      border-radius: 7px; transition: all .12s; margin-top: auto; position: relative;
     }
-    .chat-trigger:hover { background: var(--surface-2); color: var(--accent); }
-    .chat-trigger.active { background: var(--surface-2); color: var(--accent); border-color: rgba(167,139,250,.3); }
-    .chat-trigger svg { flex-shrink: 0; }
-    .chat-trigger-label {
-      writing-mode: vertical-rl;
-      text-orientation: mixed;
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      color: inherit;
-      user-select: none;
-    }
-    .chat-badge {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 8px; height: 8px;
-      background: var(--accent);
-      border-radius: 50%;
-      border: 2px solid var(--surface-1);
+    .chat-nav-btn:hover { background: var(--surface-1); color: var(--text-1); }
+    .chat-nav-btn.active { background: rgba(167,139,250,.12); color: var(--accent); border-color: rgba(167,139,250,.2); font-weight: 600; }
+    .chat-nav-badge {
+      position: absolute; top: 4px; left: 22px;
+      width: 7px; height: 7px; background: var(--accent);
+      border-radius: 50%; border: 2px solid var(--surface-0);
+      display: none;
     }
 
+    /* Painel que sai para a direita do sidebar */
     .chat-panel {
       position: fixed;
-      top: 56px; /* abaixo do header */
-      right: 0;
+      top: 56px;
+      left: 220px; /* largura do admin-nav */
       bottom: 0;
-      width: 360px;
-      background: var(--surface-0);
-      border-left: 1px solid var(--border-2);
+      width: 320px;
+      background: var(--surface-1);
+      border-right: 1px solid var(--border-2);
+      border-top: 1px solid var(--border-1);
       z-index: 490;
       display: flex;
       flex-direction: column;
-      transform: translateX(100%);
+      transform: translateX(-110%);
       transition: transform .25s cubic-bezier(.4,0,.2,1);
-      box-shadow: -8px 0 32px rgba(0,0,0,.4);
+      box-shadow: 6px 0 24px rgba(0,0,0,.35);
     }
     .chat-panel.open { transform: translateX(0); }
 
@@ -784,6 +761,17 @@
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
       Nova Categoria
+    </button>
+
+    <!-- separador + botão chat no rodapé do sidebar -->
+    <div style="flex:1"></div>
+    <div style="border-top:1px solid var(--border-1); margin: 8px 0"></div>
+    <button class="chat-nav-btn" id="chatNavBtn" onclick="toggleChat()">
+      <span class="chat-nav-badge" id="chatBadge"></span>
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      </svg>
+      Chat
     </button>
   </nav>
 
@@ -2153,15 +2141,6 @@ pubInit();
      CHAT FLYOUT
 ══════════════════════════════════════ -->
 
-<!-- Botão gatilho na lateral direita -->
-<button class="chat-trigger" id="chatTrigger" onclick="toggleChat()" title="Abrir chat">
-  <span class="chat-badge" id="chatBadge" style="display:none"></span>
-  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-  </svg>
-  <span class="chat-trigger-label">Chat</span>
-</button>
-
 <!-- Painel deslizante -->
 <div class="chat-panel" id="chatPanel">
   <div class="chat-panel-header">
@@ -2212,7 +2191,7 @@ let chatMessages = JSON.parse(localStorage.getItem(CHAT_KEY) || '[]');
 function toggleChat() {
   chatOpen = !chatOpen;
   document.getElementById('chatPanel').classList.toggle('open', chatOpen);
-  document.getElementById('chatTrigger').classList.toggle('active', chatOpen);
+  document.getElementById('chatNavBtn').classList.toggle('active', chatOpen);
   document.getElementById('chatBadge').style.display = 'none';
   if (chatOpen) {
     renderChatMessages();

@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administração — LC Base de Conhecimento</title>
+  <style>
+    :root {
+      --purple: #7C3AED;
+      --purple-dark: #4C1D95;
+      --purple-mid: #6D28D9;
+      --purple-light: #EDE9FE;
+      --purple-100: #F5F3FF;
+      --yellow: #F59E0B;
+      --yellow-light: #FEF3C7;
+      --yellow-dark: #D97706;
+      --white: #FFFFFF;
+      --gray-50: #F9FAFB;
+      --gray-100: #F3F4F6;
+      --gray-200: #E5E7EB;
+      --gray-300: #D1D5DB;
+      --gray-400: #9CA3AF;
+      --gray-500: #6B7280;
+      --gray-700: #374151;
+      --gray-900: #111827;
+      --red: #EF4444;
+      --green: #10B981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-700);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--purple-dark);
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 24px;
+      height: 54px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+
+    .header-logo { font-size: 17px; font-weight: 700; }
+    .header-logo span { color: var(--yellow); }
+
+    .header-title {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      margin-left: 4px;
+    }
+
+    .header-back {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: all 0.2s;
+    }
+
+    .header-back:hover { background: rgba(255,255,255,0.1); color: white; }
+
+    /* ── LAYOUT ── */
+    .admin-layout {
+      display: flex;
+      min-height: calc(100vh - 54px);
+    }
+
+    /* ── LEFT NAV ── */
+    .admin-nav {
+      width: 200px;
+      background: white;
+      border-right: 1px solid var(--gray-200);
+      flex-shrink: 0;
+      padding: 16px 0;
+    }
+
+    .admin-nav-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0 16px 8px;
+    }
+
+    .admin-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--gray-700);
+      text-align: left;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .admin-nav-btn:hover { background: var(--purple-100); color: var(--purple); }
+    .admin-nav-btn.active {
+      background: var(--purple-100);
+      color: var(--purple);
+      border-left-color: var(--purple);
+      font-weight: 600;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--yellow);
+      color: var(--purple-dark);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+
+    /* ── CENTER CONTENT ── */
+    .admin-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Tab Bar */
+    .tab-bar {
+      background: white;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0 24px;
+    }
+
+    .tab-btn {
+      padding: 14px 20px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--gray-500);
+      font-weight: 500;
+      transition: all 0.15s;
+      margin-bottom: -1px;
+    }
+
+    .tab-btn:hover { color: var(--purple); }
+    .tab-btn.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: 600; }
+
+    .tab-actions { margin-left: auto; display: flex; gap: 8px; }
+
+    /* Content Area */
+    .tab-content { flex: 1; overflow-y: auto; padding: 28px 28px 28px 28px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── FORM ── */
+    .form-section { max-width: 100%; }
+
+    .form-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 14px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--yellow);
+      display: inline-block;
+    }
+
+    .form-row { margin-bottom: 20px; }
+
+    .form-row label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--purple-dark);
+      margin-bottom: 6px;
+    }
+
+    .form-row label .req { color: var(--yellow-dark); margin-left: 2px; }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--gray-900);
+      background: white;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+    }
+
+    .form-input::placeholder, .form-textarea::placeholder { color: var(--gray-400); }
+
+    .form-select { appearance: auto; }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* ── EDITOR WRAPPER ── */
+    .editor-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--purple-dark);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .editor-shell {
+      display: flex;
+      gap: 0;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: white;
+    }
+
+    .editor-shell:focus-within {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+    }
+
+    /* Editor Body */
+    .editor-body {
+      flex: 1;
+      min-height: 340px;
+      padding: 16px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--gray-900);
+      overflow-y: auto;
+    }
+
+    .editor-body:empty::before {
+      content: attr(data-placeholder);
+      color: var(--gray-400);
+      pointer-events: none;
+    }
+
+    .editor-body h1 { font-size: 22px; color: var(--purple-dark); margin: 16px 0 8px; }
+    .editor-body h2 { font-size: 18px; color: var(--purple-dark); margin: 14px 0 6px; }
+    .editor-body p { margin-bottom: 10px; }
+    .editor-body ul, .editor-body ol { padding-left: 22px; margin-bottom: 10px; }
+    .editor-body li { margin-bottom: 4px; }
+    .editor-body blockquote {
+      border-left: 3px solid var(--purple);
+      margin: 10px 0;
+      padding: 8px 16px;
+      background: var(--purple-100);
+      border-radius: 0 6px 6px 0;
+      color: var(--purple-dark);
+      font-style: italic;
+    }
+
+    .editor-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+
+    .editor-body th {
+      background: var(--purple);
+      color: white;
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .editor-body td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--gray-200);
+      font-size: 13px;
+    }
+
+    .editor-body a { color: var(--purple); text-decoration: underline; }
+
+    .editor-body code {
+      background: var(--gray-100);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+    }
+
+    .editor-body pre {
+      background: var(--gray-900);
+      color: #e5e7eb;
+      padding: 14px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      overflow-x: auto;
+    }
+
+    .editor-body pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+
+    /* ── RIGHT TOOLBAR ── */
+    .editor-toolbar {
+      width: 52px;
+      background: var(--gray-50);
+      border-left: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 0;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .toolbar-sep {
+      width: 28px;
+      height: 1px;
+      background: var(--gray-200);
+      margin: 4px 0;
+    }
+
+    .toolbar-btn {
+      width: 36px;
+      height: 36px;
+      background: none;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gray-700);
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .toolbar-btn:hover { background: var(--purple-light); color: var(--purple); }
+    .toolbar-btn.active { background: var(--purple); color: white; }
+
+    .toolbar-btn[title]:hover::after {
+      content: attr(title);
+      position: absolute;
+      right: 48px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--gray-900);
+      color: white;
+      font-size: 11px;
+      font-weight: 400;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 99;
+    }
+
+    /* Color pickers row */
+    .toolbar-color-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .toolbar-color-btn {
+      width: 36px;
+      height: 36px;
+      background: none;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gray-700);
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .toolbar-color-btn:hover { background: var(--purple-light); }
+
+    .toolbar-color-btn input[type="color"] {
+      position: absolute;
+      width: 0;
+      height: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* ── ARTICLE LIST TABLE ── */
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .list-title { font-size: 17px; font-weight: 700; color: var(--gray-900); }
+
+    .list-filter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .filter-input {
+      padding: 7px 12px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .filter-input:focus { border-color: var(--purple); }
+
+    .filter-select {
+      padding: 7px 12px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      background: white;
+      cursor: pointer;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .data-table th {
+      background: var(--purple);
+      color: white;
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .data-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 13px;
+      color: var(--gray-700);
+    }
+
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--purple-100); }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-published { background: #D1FAE5; color: #065F46; }
+    .status-draft { background: var(--yellow-light); color: var(--yellow-dark); }
+
+    .action-btns { display: flex; gap: 6px; }
+
+    .btn-sm {
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-edit { background: var(--purple-light); color: var(--purple); }
+    .btn-edit:hover { background: var(--purple); color: white; }
+    .btn-del { background: #FEE2E2; color: var(--red); }
+    .btn-del:hover { background: var(--red); color: white; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 9px 20px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary { background: var(--purple); color: white; }
+    .btn-primary:hover { background: var(--purple-mid); box-shadow: 0 4px 12px rgba(124,58,237,0.35); }
+
+    .btn-secondary { background: white; color: var(--gray-700); border: 1.5px solid var(--gray-200); }
+    .btn-secondary:hover { border-color: var(--purple); color: var(--purple); }
+
+    .btn-yellow { background: var(--yellow); color: var(--purple-dark); }
+    .btn-yellow:hover { background: var(--yellow-dark); color: white; }
+
+    .btn-danger { background: white; color: var(--red); border: 1.5px solid #FECACA; }
+    .btn-danger:hover { background: var(--red); color: white; border-color: var(--red); }
+
+    /* ── CATEGORIES ── */
+    .cats-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .cat-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: white;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 12px 16px;
+      transition: border-color 0.15s;
+    }
+
+    .cat-item:hover { border-color: var(--purple); }
+
+    .cat-item-order {
+      width: 28px;
+      height: 28px;
+      background: var(--yellow-light);
+      color: var(--yellow-dark);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .cat-item-name { flex: 1; font-weight: 600; font-size: 14px; color: var(--gray-900); }
+    .cat-item-count { font-size: 12px; color: var(--gray-400); }
+
+    /* ── COMMENTS ── */
+    .comment-card {
+      background: white;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+      transition: border-color 0.15s;
+    }
+
+    .comment-card:hover { border-color: var(--purple); }
+
+    .comment-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .comment-author { font-weight: 600; font-size: 14px; color: var(--gray-900); }
+    .comment-meta { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+    .comment-text { font-size: 13px; color: var(--gray-700); line-height: 1.6; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 14px;
+      padding: 28px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+
+    .modal h3 { font-size: 17px; color: var(--gray-900); margin-bottom: 8px; }
+    .modal p { font-size: 14px; color: var(--gray-500); margin-bottom: 20px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--purple-dark);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideUp 0.3s ease;
+    }
+
+    .toast.success { border-left: 4px solid var(--green); }
+    .toast.error { border-left: 4px solid var(--red); }
+    .toast.warning { border-left: 4px solid var(--yellow); }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* ── FORM ACTIONS BAR ── */
+    .form-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: white;
+      border-top: 1px solid var(--gray-200);
+      flex-shrink: 0;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--purple); }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-logo">LC <span>Base</span></div>
+  <div class="header-title">/ Administração</div>
+  <a href="index.html" class="header-back">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <polyline points="15,18 9,12 15,6"/>
+    </svg>
+    Ver site
+  </a>
+</header>
+
+<div class="admin-layout">
+
+  <!-- LEFT NAV -->
+  <nav class="admin-nav">
+    <div class="admin-nav-title">Conteúdo</div>
+    <button class="admin-nav-btn active" onclick="showSection('articles')" id="navArticles">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14,2 14,8 20,8"/>
+      </svg>
+      Artigos
+      <span class="nav-badge" id="badgeArticles">0</span>
+    </button>
+    <button class="admin-nav-btn" onclick="showSection('categories')" id="navCategories">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+      </svg>
+      Categorias
+      <span class="nav-badge" id="badgeCategories">0</span>
+    </button>
+    <button class="admin-nav-btn" onclick="showSection('comments')" id="navComments">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      </svg>
+      Comentários
+    </button>
+
+    <div class="admin-nav-title" style="margin-top:20px">Novo</div>
+    <button class="admin-nav-btn" onclick="newArticle()" id="navNew">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Novo Artigo
+    </button>
+    <button class="admin-nav-btn" onclick="newCategory()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Nova Categoria
+    </button>
+  </nav>
+
+  <!-- CENTER -->
+  <div class="admin-center">
+
+    <!-- ARTICLES SECTION -->
+    <div id="sectionArticles" style="display:flex;flex-direction:column;height:100%">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('list')" id="tabList">Lista de Artigos</button>
+        <button class="tab-btn" onclick="switchTab('edit')" id="tabEdit">Editor de Artigo</button>
+        <div class="tab-actions" id="tabActionsBar"></div>
+      </div>
+
+      <div class="tab-content" id="tabContentWrapper" style="flex:1">
+
+        <!-- LIST TAB -->
+        <div class="tab-panel active" id="panelList">
+          <div class="list-header">
+            <div class="list-title">Artigos</div>
+            <div class="list-filter">
+              <input class="filter-input" type="text" placeholder="Buscar artigo..." oninput="filterArticles(this.value)" />
+              <select class="filter-select" onchange="filterByCat(this.value)" id="catFilter">
+                <option value="">Todas as categorias</option>
+              </select>
+              <button class="btn btn-yellow" onclick="newArticle()">+ Novo Artigo</button>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Categoria</th>
+                <th>Status</th>
+                <th>Visualizações</th>
+                <th>Data</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="articlesTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- EDIT TAB -->
+        <div class="tab-panel" id="panelEdit">
+          <div class="form-section">
+            <div class="form-section-title">Informações do Artigo</div>
+
+            <div class="form-row">
+              <label>Nome <span class="req">*</span></label>
+              <input class="form-input" type="text" id="fieldTitle" placeholder="Informe o Nome do Artigo..." />
+            </div>
+
+            <div class="form-row">
+              <label>Descrição</label>
+              <input class="form-input" type="text" id="fieldDescription" placeholder="Informe a descrição do Artigo..." />
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-row" style="margin-bottom:0">
+                <label>Categoria <span class="req">*</span></label>
+                <select class="form-select" id="fieldCategory">
+                  <option value="">Selecione...</option>
+                </select>
+              </div>
+              <div class="form-row" style="margin-bottom:0">
+                <label>Prioridade de ordenação</label>
+                <input class="form-input" type="number" id="fieldOrder" placeholder="Ex: 1" min="1" />
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-top:20px">
+              <label>Status <span class="req">*</span></label>
+              <select class="form-select" id="fieldStatus">
+                <option value="draft">Rascunho</option>
+                <option value="published">Publicado</option>
+              </select>
+            </div>
+
+            <div class="form-row" style="margin-top:8px">
+              <label class="editor-label">Conteúdo <span class="req">*</span></label>
+              <div class="editor-shell">
+                <!-- Editor body -->
+                <div class="editor-body" id="editorBody"
+                     contenteditable="true"
+                     data-placeholder="Escreva o conteúdo do artigo aqui..."
+                     oninput="syncContent()"
+                     onkeydown="handleEditorKey(event)"></div>
+
+                <!-- RIGHT TOOLBAR -->
+                <div class="editor-toolbar">
+                  <!-- Text format -->
+                  <button class="toolbar-btn" title="Negrito (Ctrl+B)" onclick="fmt('bold')"><b>B</b></button>
+                  <button class="toolbar-btn" title="Itálico (Ctrl+I)" onclick="fmt('italic')"><i>I</i></button>
+                  <button class="toolbar-btn" title="Sublinhado (Ctrl+U)" onclick="fmt('underline')"><u>U</u></button>
+                  <button class="toolbar-btn" title="Tachado" onclick="fmt('strikeThrough')"><s>S</s></button>
+
+                  <div class="toolbar-sep"></div>
+
+                  <!-- Headings -->
+                  <button class="toolbar-btn" title="Título H1" onclick="fmtBlock('h1')" style="font-size:11px;font-weight:700">H1</button>
+                  <button class="toolbar-btn" title="Título H2" onclick="fmtBlock('h2')" style="font-size:11px;font-weight:700">H2</button>
+
+                  <div class="toolbar-sep"></div>
+
+                  <!-- Lists -->
+                  <button class="toolbar-btn" title="Lista não ordenada" onclick="fmt('insertUnorderedList')">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <line x1="9" y1="6" x2="20" y2="6"/>
+                      <line x1="9" y1="12" x2="20" y2="12"/>
+                      <line x1="9" y1="18" x2="20" y2="18"/>
+                      <circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/>
+                      <circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+                      <circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/>
+                    </svg>
+                  </button>
+                  <button class="toolbar-btn" title="Lista ordenada" onclick="fmt('insertOrderedList')">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <line x1="10" y1="6" x2="21" y2="6"/>
+                      <line x1="10" y1="12" x2="21" y2="12"/>
+                      <line x1="10" y1="18" x2="21" y2="18"/>
+                      <path d="M4 6h1v4" stroke-width="1.5"/>
+                      <path d="M3 17h2M4 17v-2.5a1.5 1.5 0 00-1.5 1.5" stroke-width="1.5"/>
+                    </svg>
+                  </button>
+
+                  <div class="toolbar-sep"></div>
+
+                  <!-- Alignment -->
+                  <button class="toolbar-btn" title="Alinhar à esquerda" onclick="fmt('justifyLeft')">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                  <button class="toolbar-btn" title="Centralizar" onclick="fmt('justifyCenter')">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
+                    </svg>
+                  </button>
+                  <button class="toolbar-btn" title="Alinhar à direita" onclick="fmt('justifyRight')">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/>
+                    </svg>
+                  </button>
+
+                  <div class="toolbar-sep"></div>
+
+                  <!-- Colors -->
+                  <div class="toolbar-color-btn" title="Cor do texto">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M9 20H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v3"/>
+                      <path d="M8 12h8M8 8h8M8 16h4"/>
+                    </svg>
+                    <input type="color" id="textColorPicker" value="#7C3AED" onchange="applyTextColor(this.value)" title="Cor do texto" />
+                  </div>
+                  <div class="toolbar-color-btn" title="Cor de fundo">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-3.12 3.12-1.41-1.42-1.42 1.42 1.41 1.41-6.6 6.6A2 2 0 005 16v3h3a2 2 0 001.42-.59l6.6-6.6 1.41 1.42 1.42-1.42-1.42-1.41 3.12-3.12a1 1 0 000-1.65z"/>
+                    </svg>
+                    <input type="color" id="bgColorPicker" value="#FEF3C7" onchange="applyBgColor(this.value)" title="Cor de fundo" />
+                  </div>
+
+                  <div class="toolbar-sep"></div>
+
+                  <!-- Link / Image -->
+                  <button class="toolbar-btn" title="Inserir link" onclick="insertLink()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                      <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                    </svg>
+                  </button>
+                  <button class="toolbar-btn" title="Inserir imagem" onclick="insertImage()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21,15 16,10 5,21"/>
+                    </svg>
+                  </button>
+
+                  <div class="toolbar-sep"></div>
+
+                  <!-- Table / Quote / Code -->
+                  <button class="toolbar-btn" title="Inserir tabela" onclick="insertTable()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      <line x1="3" y1="9" x2="21" y2="9"/>
+                      <line x1="3" y1="15" x2="21" y2="15"/>
+                      <line x1="9" y1="3" x2="9" y2="21"/>
+                    </svg>
+                  </button>
+                  <button class="toolbar-btn" title="Citação" onclick="fmtBlock('blockquote')">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M10 11H4a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v10a1 1 0 01-1 1 3 3 0 00-3 3 1 1 0 01-2 0 5 5 0 015-5zm11 0h-6a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v10a1 1 0 01-1 1 3 3 0 00-3 3 1 1 0 01-2 0 5 5 0 015-5z"/>
+                    </svg>
+                  </button>
+                  <button class="toolbar-btn" title="Bloco de código" onclick="insertCode()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/>
+                    </svg>
+                  </button>
+
+                  <div class="toolbar-sep"></div>
+
+                  <!-- Clear -->
+                  <button class="toolbar-btn" title="Remover formatação" onclick="fmt('removeFormat')" style="color:var(--gray-400)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- FORM ACTIONS -->
+      <div class="form-actions" id="editActions" style="display:none">
+        <button class="btn btn-danger" onclick="confirmDelete()" id="btnDelete">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2 2 0 01-2 2H8a2 2 0 01-2-2L5,6"/>
+          </svg>
+          Excluir
+        </button>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="cancelEdit()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveArticle()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+              <polyline points="17,21 17,13 7,13 7,21"/>
+              <polyline points="7,3 7,8 15,8"/>
+            </svg>
+            Salvar Artigo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATEGORIES SECTION -->
+    <div id="sectionCategories" style="display:none;flex-direction:column;height:100%">
+      <div class="tab-bar">
+        <button class="tab-btn active">Gerenciar Categorias</button>
+        <div class="tab-actions">
+          <button class="btn btn-yellow" onclick="newCategory()">+ Nova Categoria</button>
+        </div>
+      </div>
+      <div class="tab-content">
+        <div class="list-header">
+          <div class="list-title">Categorias</div>
+        </div>
+        <div class="cats-list" id="catsList"></div>
+      </div>
+    </div>
+
+    <!-- COMMENTS SECTION -->
+    <div id="sectionComments" style="display:none;flex-direction:column;height:100%">
+      <div class="tab-bar">
+        <button class="tab-btn active">Comentários</button>
+      </div>
+      <div class="tab-content">
+        <div id="commentsList"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" style="display:none">
+  <div class="modal">
+    <h3 id="modalTitle">Confirmar</h3>
+    <p id="modalMsg"></p>
+    <div class="form-row" id="modalInput" style="display:none">
+      <label id="modalInputLabel">Nome</label>
+      <input class="form-input" type="text" id="modalInputField" />
+    </div>
+    <div class="form-row" id="modalSecondInput" style="display:none">
+      <label id="modalSecondLabel">Ordem</label>
+      <input class="form-input" type="number" id="modalSecondField" min="1" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="modalConfirmBtn" onclick="modalConfirm()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── DATA ──
+  const ARTICLES_KEY = 'lc_articles';
+  const CATEGORIES_KEY = 'lc_categories';
+
+  function getArticles() {
+    const raw = localStorage.getItem(ARTICLES_KEY);
+    if (raw) return JSON.parse(raw);
+    const data = getSampleData();
+    localStorage.setItem(ARTICLES_KEY, JSON.stringify(data.articles));
+    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(data.categories));
+    return data.articles;
+  }
+
+  function getCategories() {
+    const raw = localStorage.getItem(CATEGORIES_KEY);
+    if (raw) return JSON.parse(raw);
+    const data = getSampleData();
+    localStorage.setItem(ARTICLES_KEY, JSON.stringify(data.articles));
+    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(data.categories));
+    return data.categories;
+  }
+
+  function saveArticles(articles) { localStorage.setItem(ARTICLES_KEY, JSON.stringify(articles)); }
+  function saveCategories(cats) { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats)); }
+
+  function getSampleData() {
+    return {
+      categories: [
+        { id: 1, name: 'Instalação', order: 1 },
+        { id: 2, name: 'LC ERP', order: 2 },
+        { id: 3, name: 'LC WEB', order: 3 },
+        { id: 4, name: 'LC Pay', order: 4 },
+        { id: 5, name: 'Aplicativos', order: 5 },
+        { id: 6, name: 'Equipamentos', order: 6 },
+        { id: 7, name: 'Retornos e Rejeições', order: 7 },
+        { id: 8, name: 'Utilitários', order: 8 },
+        { id: 9, name: 'Passo a passo', order: 9 },
+        { id: 10, name: 'Rotinas', order: 10 },
+      ],
+      articles: [
+        { id: 1, title: 'Como fazer instalação do banco de dados personalizada (Parte 1)', description: 'Guia completo para instalação do banco de dados.', categoryId: 1, status: 'published', order: 1, views: 3298, date: '29/09/2022', content: '<h2>Instalação do Banco de Dados - Parte 1</h2><p>Este guia apresenta o processo completo de instalação personalizada do banco de dados do sistema LC.</p><h3>Pré-requisitos</h3><ul><li>Sistema operacional Windows 10 ou superior</li><li>Mínimo de 4GB de RAM</li><li>Espaço em disco: 20GB disponíveis</li><li>Permissões de administrador</li></ul><p>Siga as etapas abaixo para realizar a instalação corretamente.</p>' },
+        { id: 2, title: 'Como fazer instalação do banco de dados personalizada (Parte 2)', description: '', categoryId: 1, status: 'published', order: 2, views: 1853, date: '29/09/2022', content: '<h2>Instalação do Banco de Dados - Parte 2</h2><p>Continuação do processo de instalação personalizada.</p>' },
+        { id: 3, title: 'Como fazer instalação do banco de dados personalizada (Parte 3)', description: '', categoryId: 1, status: 'published', order: 3, views: 1675, date: '29/09/2022', content: '<h2>Instalação do Banco de Dados - Parte 3</h2><p>Terceira parte do processo de instalação.</p>' },
+        { id: 4, title: 'Como fazer instalação do banco de dados personalizada (Parte 4)', description: '', categoryId: 1, status: 'published', order: 4, views: 1508, date: '29/09/2022', content: '<h2>Instalação do Banco de Dados - Parte 4</h2><p>Finalização e testes.</p>' },
+        { id: 5, title: 'Como desinstalar o banco de dados da forma correta', description: '', categoryId: 1, status: 'published', order: 5, views: 2668, date: '12/09/2022', content: '<h2>Desinstalação do Banco de Dados</h2><p>Guia para remover o banco de dados corretamente.</p>' },
+        { id: 6, title: 'Como redefinir a senha do Banco de Dados', description: '', categoryId: 1, status: 'published', order: 6, views: 739, date: '02/10/2023', content: '<h2>Redefinição de Senha</h2><p>Passos para redefinir a senha do banco de dados.</p>' },
+      ]
+    };
+  }
+
+  // ── STATE ──
+  let currentSection = 'articles';
+  let currentTab = 'list';
+  let editingId = null;
+  let filterText = '';
+  let filterCat = '';
+  let modalCallback = null;
+
+  // ── INIT ──
+  function init() {
+    getArticles(); // ensure data init
+    renderBadges();
+    renderArticlesList();
+    renderCatsFilter();
+    renderCatsList();
+    renderComments();
+  }
+
+  function renderBadges() {
+    document.getElementById('badgeArticles').textContent = getArticles().length;
+    document.getElementById('badgeCategories').textContent = getCategories().length;
+  }
+
+  // ── SECTION SWITCH ──
+  function showSection(name) {
+    currentSection = name;
+    ['articles', 'categories', 'comments'].forEach(s => {
+      const el = document.getElementById('section' + s.charAt(0).toUpperCase() + s.slice(1));
+      if (el) el.style.display = s === name ? 'flex' : 'none';
+    });
+    ['navArticles', 'navCategories', 'navComments'].forEach(id => {
+      document.getElementById(id)?.classList.remove('active');
+    });
+    const map = { articles: 'navArticles', categories: 'navCategories', comments: 'navComments' };
+    document.getElementById(map[name])?.classList.add('active');
+
+    if (name === 'categories') renderCatsList();
+    if (name === 'comments') renderComments();
+  }
+
+  // ── TAB SWITCH ──
+  function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('tabList').classList.toggle('active', tab === 'list');
+    document.getElementById('tabEdit').classList.toggle('active', tab === 'edit');
+    document.getElementById('panelList').classList.toggle('active', tab === 'list');
+    document.getElementById('panelEdit').classList.toggle('active', tab === 'edit');
+    document.getElementById('editActions').style.display = tab === 'edit' ? 'flex' : 'none';
+  }
+
+  // ── ARTICLES LIST ──
+  function renderArticlesList() {
+    const cats = getCategories();
+    let articles = getArticles().sort((a, b) => a.order - b.order);
+
+    if (filterText) {
+      const q = filterText.toLowerCase();
+      articles = articles.filter(a => a.title.toLowerCase().includes(q) || (a.description || '').toLowerCase().includes(q));
+    }
+    if (filterCat) {
+      articles = articles.filter(a => a.categoryId == filterCat);
+    }
+
+    const tbody = document.getElementById('articlesTableBody');
+    if (articles.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:40px">Nenhum artigo encontrado.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = articles.map(a => {
+      const cat = cats.find(c => c.id === a.categoryId);
+      return `
+        <tr>
+          <td style="max-width:320px">
+            <div style="font-weight:600;color:var(--gray-900)">${a.title}</div>
+            ${a.description ? `<div style="font-size:12px;color:var(--gray-400);margin-top:2px">${a.description}</div>` : ''}
+          </td>
+          <td><span style="color:var(--purple);font-weight:500;font-size:12px">${cat ? cat.name : '—'}</span></td>
+          <td>
+            <span class="status-badge ${a.status === 'published' ? 'status-published' : 'status-draft'}">
+              ${a.status === 'published' ? '● Publicado' : '○ Rascunho'}
+            </span>
+          </td>
+          <td>${(a.views || 0).toLocaleString('pt-BR')}</td>
+          <td>${a.date || '—'}</td>
+          <td>
+            <div class="action-btns">
+              <button class="btn-sm btn-edit" onclick="editArticle(${a.id})">Editar</button>
+              <button class="btn-sm btn-del" onclick="deleteArticle(${a.id})">Excluir</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function filterArticles(val) { filterText = val; renderArticlesList(); }
+  function filterByCat(val) { filterCat = val; renderArticlesList(); }
+
+  function renderCatsFilter() {
+    const cats = getCategories().sort((a, b) => a.order - b.order);
+    const sel = document.getElementById('catFilter');
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      sel.appendChild(opt);
+    });
+    // Also populate form category dropdown
+    populateCategoryDropdown();
+  }
+
+  function populateCategoryDropdown() {
+    const cats = getCategories().sort((a, b) => a.order - b.order);
+    const sel = document.getElementById('fieldCategory');
+    sel.innerHTML = '<option value="">Selecione...</option>';
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  // ── NEW / EDIT ARTICLE ──
+  function newArticle() {
+    editingId = null;
+    clearForm();
+    document.getElementById('btnDelete').style.display = 'none';
+    switchTab('edit');
+    showSection('articles');
+  }
+
+  function editArticle(id) {
+    const article = getArticles().find(a => a.id === id);
+    if (!article) return;
+    editingId = id;
+    populateCategoryDropdown();
+    document.getElementById('fieldTitle').value = article.title;
+    document.getElementById('fieldDescription').value = article.description || '';
+    document.getElementById('fieldCategory').value = article.categoryId || '';
+    document.getElementById('fieldOrder').value = article.order || '';
+    document.getElementById('fieldStatus').value = article.status || 'draft';
+    document.getElementById('editorBody').innerHTML = article.content || '';
+    document.getElementById('btnDelete').style.display = 'inline-flex';
+    switchTab('edit');
+    showSection('articles');
+  }
+
+  function clearForm() {
+    document.getElementById('fieldTitle').value = '';
+    document.getElementById('fieldDescription').value = '';
+    document.getElementById('fieldCategory').value = '';
+    document.getElementById('fieldOrder').value = '';
+    document.getElementById('fieldStatus').value = 'draft';
+    document.getElementById('editorBody').innerHTML = '';
+    populateCategoryDropdown();
+  }
+
+  function cancelEdit() {
+    clearForm();
+    editingId = null;
+    switchTab('list');
+    renderArticlesList();
+  }
+
+  function saveArticle() {
+    const title = document.getElementById('fieldTitle').value.trim();
+    const categoryId = parseInt(document.getElementById('fieldCategory').value);
+    const status = document.getElementById('fieldStatus').value;
+
+    if (!title) { showToast('Informe o nome do artigo.', 'error'); return; }
+    if (!categoryId) { showToast('Selecione uma categoria.', 'error'); return; }
+
+    const articles = getArticles();
+    const now = new Date();
+    const dateStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+
+    if (editingId) {
+      const idx = articles.findIndex(a => a.id === editingId);
+      if (idx !== -1) {
+        articles[idx] = {
+          ...articles[idx],
+          title,
+          description: document.getElementById('fieldDescription').value.trim(),
+          categoryId,
+          order: parseInt(document.getElementById('fieldOrder').value) || articles[idx].order,
+          status,
+          content: document.getElementById('editorBody').innerHTML,
+        };
+      }
+      showToast('Artigo atualizado com sucesso!', 'success');
+    } else {
+      const newId = Math.max(0, ...articles.map(a => a.id)) + 1;
+      articles.push({
+        id: newId,
+        title,
+        description: document.getElementById('fieldDescription').value.trim(),
+        categoryId,
+        order: parseInt(document.getElementById('fieldOrder').value) || newId,
+        status,
+        views: 0,
+        date: dateStr,
+        content: document.getElementById('editorBody').innerHTML,
+      });
+      showToast('Artigo criado com sucesso!', 'success');
+    }
+
+    saveArticles(articles);
+    renderBadges();
+    switchTab('list');
+    renderArticlesList();
+    editingId = null;
+  }
+
+  function deleteArticle(id) {
+    const article = getArticles().find(a => a.id === id);
+    openModal(
+      'Excluir Artigo',
+      `Tem certeza que deseja excluir "<strong>${article?.title}</strong>"? Esta ação não pode ser desfeita.`,
+      () => {
+        const articles = getArticles().filter(a => a.id !== id);
+        saveArticles(articles);
+        renderBadges();
+        renderArticlesList();
+        showToast('Artigo excluído.', 'warning');
+      }
+    );
+  }
+
+  function confirmDelete() {
+    if (!editingId) return;
+    deleteArticle(editingId);
+    cancelEdit();
+  }
+
+  function syncContent() { /* content is live in editorBody */ }
+
+  // ── CATEGORIES ──
+  function renderCatsList() {
+    const cats = getCategories().sort((a, b) => a.order - b.order);
+    const articles = getArticles();
+    const container = document.getElementById('catsList');
+
+    if (cats.length === 0) {
+      container.innerHTML = '<p style="color:var(--gray-400);font-size:14px">Nenhuma categoria cadastrada.</p>';
+      return;
+    }
+
+    container.innerHTML = cats.map(cat => {
+      const count = articles.filter(a => a.categoryId === cat.id).length;
+      return `
+        <div class="cat-item">
+          <div class="cat-item-order">${cat.order}</div>
+          <div class="cat-item-name">${cat.name}</div>
+          <div class="cat-item-count">${count} artigo${count !== 1 ? 's' : ''}</div>
+          <div class="action-btns">
+            <button class="btn-sm btn-edit" onclick="editCategory(${cat.id})">Editar</button>
+            <button class="btn-sm btn-del" onclick="deleteCategory(${cat.id})">Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function newCategory() {
+    showSection('categories');
+    openModalForm(
+      'Nova Categoria',
+      'Nome da categoria', '', 'Prioridade de ordenação', '',
+      (name, order) => {
+        if (!name.trim()) { showToast('Informe o nome da categoria.', 'error'); return; }
+        const cats = getCategories();
+        const newId = Math.max(0, ...cats.map(c => c.id)) + 1;
+        const newOrder = parseInt(order) || (cats.length + 1);
+        cats.push({ id: newId, name: name.trim(), order: newOrder });
+        saveCategories(cats);
+        renderBadges();
+        renderCatsList();
+        populateCategoryDropdown();
+        // Also refresh filter dropdown
+        const catFilter = document.getElementById('catFilter');
+        catFilter.innerHTML = '<option value="">Todas as categorias</option>';
+        cats.sort((a,b)=>a.order-b.order).forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id; opt.textContent = c.name;
+          catFilter.appendChild(opt);
+        });
+        showToast('Categoria criada!', 'success');
+      }
+    );
+  }
+
+  function editCategory(id) {
+    const cat = getCategories().find(c => c.id === id);
+    if (!cat) return;
+    openModalForm(
+      'Editar Categoria',
+      'Nome da categoria', cat.name, 'Prioridade de ordenação', String(cat.order),
+      (name, order) => {
+        if (!name.trim()) { showToast('Informe o nome da categoria.', 'error'); return; }
+        const cats = getCategories().map(c => c.id === id ? { ...c, name: name.trim(), order: parseInt(order) || c.order } : c);
+        saveCategories(cats);
+        renderBadges();
+        renderCatsList();
+        populateCategoryDropdown();
+        showToast('Categoria atualizada!', 'success');
+      }
+    );
+  }
+
+  function deleteCategory(id) {
+    const cat = getCategories().find(c => c.id === id);
+    const count = getArticles().filter(a => a.categoryId === id).length;
+    openModal(
+      'Excluir Categoria',
+      `Tem certeza que deseja excluir a categoria "<strong>${cat?.name}</strong>"?${count > 0 ? ` Ela possui <strong>${count} artigo(s)</strong> associados.` : ''}`,
+      () => {
+        const cats = getCategories().filter(c => c.id !== id);
+        saveCategories(cats);
+        renderBadges();
+        renderCatsList();
+        populateCategoryDropdown();
+        showToast('Categoria excluída.', 'warning');
+      }
+    );
+  }
+
+  // ── COMMENTS ──
+  function renderComments() {
+    const container = document.getElementById('commentsList');
+    container.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;color:var(--gray-400)">
+        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:16px;opacity:0.4">
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+        </svg>
+        <p style="font-size:15px">Nenhum comentário ainda.</p>
+        <p style="font-size:13px;margin-top:6px">Os comentários dos artigos aparecerão aqui.</p>
+      </div>
+    `;
+  }
+
+  // ── EDITOR ──
+  function fmt(cmd, val) {
+    document.getElementById('editorBody').focus();
+    document.execCommand(cmd, false, val || null);
+  }
+
+  function fmtBlock(tag) {
+    document.getElementById('editorBody').focus();
+    if (tag === 'blockquote') {
+      document.execCommand('formatBlock', false, 'blockquote');
+    } else {
+      document.execCommand('formatBlock', false, tag);
+    }
+  }
+
+  function applyTextColor(color) {
+    document.getElementById('editorBody').focus();
+    document.execCommand('foreColor', false, color);
+  }
+
+  function applyBgColor(color) {
+    document.getElementById('editorBody').focus();
+    document.execCommand('hiliteColor', false, color);
+  }
+
+  function insertLink() {
+    const url = prompt('URL do link:');
+    if (url) {
+      document.getElementById('editorBody').focus();
+      document.execCommand('createLink', false, url);
+    }
+  }
+
+  function insertImage() {
+    const url = prompt('URL da imagem:');
+    if (url) {
+      document.getElementById('editorBody').focus();
+      document.execCommand('insertImage', false, url);
+      // make images responsive
+      setTimeout(() => {
+        document.querySelectorAll('#editorBody img').forEach(img => {
+          img.style.maxWidth = '100%';
+          img.style.borderRadius = '6px';
+        });
+      }, 50);
+    }
+  }
+
+  function insertTable() {
+    const rows = parseInt(prompt('Número de linhas:', '3') || '3');
+    const cols = parseInt(prompt('Número de colunas:', '3') || '3');
+    if (!rows || !cols) return;
+
+    let html = '<table><thead><tr>';
+    for (let c = 0; c < cols; c++) html += `<th>Coluna ${c + 1}</th>`;
+    html += '</tr></thead><tbody>';
+    for (let r = 0; r < rows; r++) {
+      html += '<tr>';
+      for (let c = 0; c < cols; c++) html += '<td>Célula</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table><p><br></p>';
+
+    document.getElementById('editorBody').focus();
+    document.execCommand('insertHTML', false, html);
+  }
+
+  function insertCode() {
+    document.getElementById('editorBody').focus();
+    document.execCommand('insertHTML', false, '<pre><code>// código aqui</code></pre><p><br></p>');
+  }
+
+  function handleEditorKey(e) {
+    if (e.ctrlKey && e.key === 's') {
+      e.preventDefault();
+      saveArticle();
+    }
+  }
+
+  // ── MODAL ──
+  function openModal(title, msg, callback) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMsg').innerHTML = msg;
+    document.getElementById('modalInput').style.display = 'none';
+    document.getElementById('modalSecondInput').style.display = 'none';
+    document.getElementById('modalConfirmBtn').textContent = 'Confirmar';
+    document.getElementById('modalConfirmBtn').className = 'btn btn-primary';
+    if (title.includes('Excluir')) {
+      document.getElementById('modalConfirmBtn').className = 'btn btn-danger';
+      document.getElementById('modalConfirmBtn').style.background = 'var(--red)';
+      document.getElementById('modalConfirmBtn').style.color = 'white';
+    }
+    modalCallback = callback;
+    document.getElementById('modal').style.display = 'flex';
+  }
+
+  function openModalForm(title, label1, val1, label2, val2, callback) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMsg').innerHTML = '';
+    document.getElementById('modalInput').style.display = 'block';
+    document.getElementById('modalInputLabel').textContent = label1;
+    document.getElementById('modalInputField').value = val1;
+    document.getElementById('modalSecondInput').style.display = 'block';
+    document.getElementById('modalSecondLabel').textContent = label2;
+    document.getElementById('modalSecondField').value = val2;
+    document.getElementById('modalConfirmBtn').textContent = 'Salvar';
+    document.getElementById('modalConfirmBtn').className = 'btn btn-primary';
+    document.getElementById('modalConfirmBtn').style.background = '';
+    document.getElementById('modalConfirmBtn').style.color = '';
+    modalCallback = () => {
+      callback(
+        document.getElementById('modalInputField').value,
+        document.getElementById('modalSecondField').value
+      );
+    };
+    document.getElementById('modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('modalInputField').focus(), 100);
+  }
+
+  function closeModal() {
+    document.getElementById('modal').style.display = 'none';
+    modalCallback = null;
+  }
+
+  function modalConfirm() {
+    if (modalCallback) modalCallback();
+    closeModal();
+  }
+
+  document.getElementById('modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal')) closeModal();
+  });
+
+  // ── TOAST ──
+  function showToast(msg, type = 'success') {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { success: '✓', error: '✕', warning: '⚠' };
+    toast.innerHTML = `<span>${icons[type] || '•'}</span> ${msg}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+  }
+
+  init();
+</script>
+</body>
+</html>

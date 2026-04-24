@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LC Base de Conhecimento</title>
+  <style>
+    :root {
+      --purple:       #7C3AED;
+      --purple-dark:  #4C1D95;
+      --purple-mid:   #6D28D9;
+      --purple-light: #EDE9FE;
+      --purple-100:   #F5F3FF;
+      --yellow:       #F59E0B;
+      --yellow-light: #FEF3C7;
+      --yellow-dark:  #D97706;
+      --white:        #FFFFFF;
+      --gray-50:      #F9FAFB;
+      --gray-100:     #F3F4F6;
+      --gray-200:     #E5E7EB;
+      --gray-300:     #D1D5DB;
+      --gray-400:     #9CA3AF;
+      --gray-500:     #6B7280;
+      --gray-700:     #374151;
+      --gray-900:     #111827;
+      --red:          #EF4444;
+      --green:        #10B981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-700);
+      min-height: 100vh;
+    }
+
+    /* ════════════════════════════
+       HEADER
+    ════════════════════════════ */
+    header {
+      background: var(--purple-dark);
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 24px;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .header-menu-btn {
+      background: none; border: none; color: white;
+      cursor: pointer; font-size: 20px;
+      display: flex; align-items: center; padding: 4px;
+      border-radius: 6px; transition: background .2s;
+    }
+    .header-menu-btn:hover { background: rgba(255,255,255,.12); }
+
+    .header-logo {
+      font-size: 18px; font-weight: 700; letter-spacing: .4px;
+      flex-shrink: 0; user-select: none; cursor: pointer;
+    }
+    .header-logo span { color: var(--yellow); }
+
+    /* mode label */
+    .header-mode {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; padding: 3px 10px; border-radius: 20px;
+      flex-shrink: 0;
+    }
+    .header-mode.public  { background: rgba(245,158,11,.2); color: var(--yellow); }
+    .header-mode.admin   { background: rgba(124,58,237,.35); color: #c4b5fd; }
+
+    .header-search {
+      flex: 1; max-width: 460px; margin: 0 auto;
+    }
+    .header-search input {
+      width: 100%; padding: 8px 16px; border-radius: 24px; border: none; outline: none;
+      font-size: 14px; background: rgba(255,255,255,.13); color: white; transition: background .2s;
+    }
+    .header-search input::placeholder { color: rgba(255,255,255,.55); }
+    .header-search input:focus { background: rgba(255,255,255,.22); }
+
+    /* hide search in admin */
+    .admin-active .header-search { display: none; }
+
+    .header-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+    /* login / admin toggle button */
+    .btn-login {
+      display: flex; align-items: center; gap: 7px;
+      background: none; border: 1.5px solid rgba(255,255,255,.25);
+      color: rgba(255,255,255,.85); padding: 6px 14px; border-radius: 20px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s;
+    }
+    .btn-login:hover { background: rgba(255,255,255,.1); color: white; border-color: rgba(255,255,255,.5); }
+    .btn-login.active { background: var(--yellow); color: var(--purple-dark); border-color: var(--yellow); }
+    .btn-login.active:hover { background: var(--yellow-dark); color: white; }
+
+    /* ════════════════════════════
+       LAYOUT WRAPPER
+    ════════════════════════════ */
+    .layout { display: flex; min-height: calc(100vh - 56px); }
+
+    /* ════════════════════════════
+       PUBLIC SIDEBAR
+    ════════════════════════════ */
+    .sidebar {
+      width: 258px; background: var(--gray-900); flex-shrink: 0;
+      overflow-y: auto; transition: width .3s, opacity .3s;
+    }
+    .sidebar.collapsed { width: 0; overflow: hidden; }
+
+    .sidebar-section { border-bottom: 1px solid rgba(255,255,255,.06); }
+
+    .sidebar-cat-btn {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 20px; background: none; border: none;
+      color: rgba(255,255,255,.82); font-size: 14px; font-weight: 500;
+      cursor: pointer; text-align: left; transition: background .15s;
+    }
+    .sidebar-cat-btn:hover { background: rgba(124,58,237,.28); }
+    .sidebar-cat-btn.active { background: rgba(124,58,237,.38); color: var(--yellow); }
+    .sidebar-cat-btn .chevron { font-size: 10px; transition: transform .2s; color: var(--purple); }
+    .sidebar-cat-btn.open .chevron { transform: rotate(90deg); }
+
+    .sidebar-articles { display: none; background: rgba(0,0,0,.18); }
+    .sidebar-articles.open { display: block; }
+
+    .sidebar-article-link {
+      display: block; padding: 10px 20px 10px 36px;
+      color: rgba(255,255,255,.6); text-decoration: none; font-size: 13px;
+      border-left: 3px solid transparent; transition: all .15s; cursor: pointer;
+    }
+    .sidebar-article-link:hover { color: white; border-left-color: var(--purple); background: rgba(124,58,237,.14); }
+    .sidebar-article-link.active { color: var(--yellow); border-left-color: var(--yellow); background: rgba(245,158,11,.09); }
+
+    /* ════════════════════════════
+       PUBLIC MAIN
+    ════════════════════════════ */
+    .pub-main { flex: 1; overflow-y: auto; padding: 32px; }
+
+    .breadcrumb {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--gray-400); margin-bottom: 24px;
+    }
+    .breadcrumb .bc-link { color: var(--purple); cursor: pointer; }
+    .breadcrumb .bc-link:hover { text-decoration: underline; }
+    .breadcrumb .sep { color: var(--gray-300); }
+
+    /* welcome */
+    .welcome-banner {
+      background: linear-gradient(135deg, var(--purple-dark) 0%, var(--purple) 100%);
+      border-radius: 16px; padding: 40px 48px; color: white;
+      margin-bottom: 36px; position: relative; overflow: hidden;
+    }
+    .welcome-banner::after {
+      content: ''; position: absolute; right: -40px; top: -40px;
+      width: 200px; height: 200px; background: var(--yellow); opacity: .1; border-radius: 50%;
+    }
+    .welcome-banner h2 { font-size: 26px; margin-bottom: 8px; }
+    .welcome-banner p { opacity: .82; font-size: 15px; }
+
+    .categories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+
+    .cat-card {
+      background: white; border: 1px solid var(--gray-200); border-radius: 12px;
+      padding: 20px; cursor: pointer; transition: all .2s; border-top: 3px solid var(--purple);
+    }
+    .cat-card:hover { box-shadow: 0 4px 20px rgba(124,58,237,.15); transform: translateY(-2px); border-top-color: var(--yellow); }
+    .cat-card-icon { width: 42px; height: 42px; background: var(--purple-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 18px; }
+    .cat-card h3 { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 4px; }
+    .cat-card p { font-size: 12px; color: var(--gray-400); }
+
+    /* category view */
+    .cat-header { margin-bottom: 24px; padding-bottom: 12px; border-bottom: 3px solid var(--yellow); display: inline-block; }
+    .cat-header h1 { font-size: 24px; color: var(--purple-dark); font-weight: 700; }
+
+    .articles-list { display: flex; flex-direction: column; }
+    .article-card {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 16px 0; border-bottom: 1px solid var(--gray-200); cursor: pointer; transition: all .15s;
+    }
+    .article-card:hover .article-title { color: var(--purple); }
+    .article-card:last-child { border-bottom: none; }
+    .article-icon { width: 36px; height: 36px; background: var(--purple-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+    .article-title { font-size: 15px; font-weight: 600; color: var(--gray-900); margin-bottom: 4px; transition: color .15s; }
+    .article-meta { font-size: 12px; color: var(--gray-400); display: flex; align-items: center; gap: 12px; }
+
+    /* article view */
+    .article-view { max-width: 800px; }
+    .article-view-title { font-size: 26px; font-weight: 700; color: var(--purple-dark); margin-bottom: 12px; line-height: 1.3; }
+    .article-view-meta { display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--gray-400); }
+    .article-badge { background: var(--purple-light); color: var(--purple); padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .article-divider { border: none; height: 3px; background: linear-gradient(90deg, var(--purple) 0%, var(--yellow) 100%); border-radius: 2px; margin: 18px 0; }
+    .article-content { font-size: 15px; line-height: 1.8; color: var(--gray-700); }
+    .article-content h1, .article-content h2, .article-content h3 { color: var(--purple-dark); margin: 22px 0 10px; }
+    .article-content p { margin-bottom: 14px; }
+    .article-content ul, .article-content ol { padding-left: 22px; margin-bottom: 14px; }
+    .article-content li { margin-bottom: 6px; }
+    .article-content table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 14px; }
+    .article-content th { background: var(--purple); color: white; padding: 10px 14px; text-align: left; }
+    .article-content td { padding: 10px 14px; border-bottom: 1px solid var(--gray-200); }
+    .article-content tr:hover td { background: var(--purple-light); }
+    .article-content blockquote { border-left: 3px solid var(--purple); margin: 12px 0; padding: 10px 16px; background: var(--purple-100); border-radius: 0 6px 6px 0; color: var(--purple-dark); font-style: italic; }
+    .article-content code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; }
+    .article-content pre { background: var(--gray-900); color: #e5e7eb; padding: 14px; border-radius: 6px; margin-bottom: 14px; overflow-x: auto; }
+    .article-content pre code { background: none; padding: 0; color: inherit; }
+
+    /* search results */
+    .search-info { font-size: 14px; color: var(--gray-500); margin-bottom: 18px; }
+    .search-info strong { color: var(--purple); }
+
+    /* empty */
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--gray-400); }
+    .empty-state svg { margin-bottom: 16px; opacity: .35; }
+    .empty-state p { font-size: 15px; }
+
+    /* ════════════════════════════
+       ADMIN LAYOUT  (hidden by default)
+    ════════════════════════════ */
+    #adminApp { display: none; flex: 1; }
+    #adminApp.visible { display: flex; }
+
+    #publicApp { display: flex; flex: 1; }
+    #publicApp.hidden { display: none; }
+
+    /* admin nav */
+    .admin-nav {
+      width: 200px; background: white; border-right: 1px solid var(--gray-200);
+      flex-shrink: 0; padding: 16px 0;
+    }
+    .admin-nav-title { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .08em; padding: 0 16px 8px; }
+    .admin-nav-btn {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+      padding: 10px 16px; background: none; border: none; cursor: pointer;
+      font-size: 14px; color: var(--gray-700); text-align: left;
+      border-left: 3px solid transparent; transition: all .15s;
+    }
+    .admin-nav-btn:hover { background: var(--purple-100); color: var(--purple); }
+    .admin-nav-btn.active { background: var(--purple-100); color: var(--purple); border-left-color: var(--purple); font-weight: 600; }
+    .nav-badge { margin-left: auto; background: var(--yellow); color: var(--purple-dark); font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; }
+
+    /* admin center */
+    .admin-center { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .tab-bar { background: white; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; padding: 0 24px; }
+    .tab-btn { padding: 14px 20px; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-size: 14px; color: var(--gray-500); font-weight: 500; transition: all .15s; margin-bottom: -1px; }
+    .tab-btn:hover { color: var(--purple); }
+    .tab-btn.active { color: var(--purple); border-bottom-color: var(--purple); font-weight: 600; }
+    .tab-actions { margin-left: auto; display: flex; gap: 8px; }
+
+    .tab-content { flex: 1; overflow-y: auto; padding: 28px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* form */
+    .form-section-title { font-size: 11px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 2px solid var(--yellow); display: inline-block; }
+    .form-row { margin-bottom: 20px; }
+    .form-row label { display: block; font-size: 13px; font-weight: 600; color: var(--purple-dark); margin-bottom: 6px; }
+    .form-row label .req { color: var(--yellow-dark); margin-left: 2px; }
+    .form-input, .form-select {
+      width: 100%; padding: 10px 14px; border: 1.5px solid var(--gray-200); border-radius: 8px;
+      font-size: 14px; color: var(--gray-900); background: white; outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
+    .form-input::placeholder { color: var(--gray-400); }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    /* editor */
+    .editor-label { font-size: 13px; font-weight: 600; color: var(--purple-dark); margin-bottom: 6px; display: block; }
+    .editor-shell {
+      display: flex; border: 1.5px solid var(--gray-200); border-radius: 8px;
+      overflow: hidden; transition: border-color .2s, box-shadow .2s; background: white;
+    }
+    .editor-shell:focus-within { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
+
+    .editor-body {
+      flex: 1; min-height: 320px; padding: 16px; outline: none;
+      font-size: 14px; line-height: 1.8; color: var(--gray-900); overflow-y: auto;
+    }
+    .editor-body:empty::before { content: attr(data-placeholder); color: var(--gray-400); pointer-events: none; }
+    .editor-body h1 { font-size: 22px; color: var(--purple-dark); margin: 16px 0 8px; }
+    .editor-body h2 { font-size: 18px; color: var(--purple-dark); margin: 14px 0 6px; }
+    .editor-body p { margin-bottom: 10px; }
+    .editor-body ul, .editor-body ol { padding-left: 22px; margin-bottom: 10px; }
+    .editor-body li { margin-bottom: 4px; }
+    .editor-body blockquote { border-left: 3px solid var(--purple); margin: 10px 0; padding: 8px 16px; background: var(--purple-100); border-radius: 0 6px 6px 0; color: var(--purple-dark); font-style: italic; }
+    .editor-body table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    .editor-body th { background: var(--purple); color: white; padding: 8px 12px; text-align: left; font-size: 13px; }
+    .editor-body td { padding: 8px 12px; border-bottom: 1px solid var(--gray-200); font-size: 13px; }
+    .editor-body a { color: var(--purple); text-decoration: underline; }
+    .editor-body code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; font-size: 13px; }
+    .editor-body pre { background: var(--gray-900); color: #e5e7eb; padding: 14px; border-radius: 6px; margin-bottom: 10px; overflow-x: auto; }
+    .editor-body pre code { background: none; padding: 0; color: inherit; }
+
+    /* right toolbar */
+    .editor-toolbar {
+      width: 52px; background: var(--gray-50); border-left: 1px solid var(--gray-200);
+      display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 2px; flex-shrink: 0;
+    }
+    .toolbar-sep { width: 28px; height: 1px; background: var(--gray-200); margin: 4px 0; }
+    .toolbar-btn {
+      width: 36px; height: 36px; background: none; border: none; border-radius: 6px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--gray-700); font-size: 13px; font-weight: 600; transition: all .15s; position: relative;
+    }
+    .toolbar-btn:hover { background: var(--purple-light); color: var(--purple); }
+    .toolbar-btn.active { background: var(--purple); color: white; }
+    .toolbar-btn[title]:hover::after {
+      content: attr(title); position: absolute; right: 48px; top: 50%; transform: translateY(-50%);
+      background: var(--gray-900); color: white; font-size: 11px; font-weight: 400;
+      padding: 4px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; z-index: 99;
+    }
+    .toolbar-color-btn {
+      width: 36px; height: 36px; background: none; border: none; border-radius: 6px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--gray-700); font-size: 13px; font-weight: 600; transition: all .15s; position: relative;
+    }
+    .toolbar-color-btn:hover { background: var(--purple-light); }
+    .toolbar-color-btn input[type="color"] { position: absolute; width: 0; height: 0; opacity: 0; cursor: pointer; }
+
+    /* data table */
+    .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .list-title { font-size: 17px; font-weight: 700; color: var(--gray-900); }
+    .list-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .filter-input { padding: 7px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 13px; outline: none; transition: border-color .2s; }
+    .filter-input:focus { border-color: var(--purple); }
+    .filter-select { padding: 7px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 13px; outline: none; background: white; cursor: pointer; }
+
+    .data-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .data-table th { background: var(--purple); color: white; padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+    .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--gray-100); font-size: 13px; color: var(--gray-700); }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--purple-100); }
+
+    .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .status-published { background: #D1FAE5; color: #065F46; }
+    .status-draft { background: var(--yellow-light); color: var(--yellow-dark); }
+
+    .action-btns { display: flex; gap: 6px; }
+    .btn-sm { padding: 5px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .btn-edit { background: var(--purple-light); color: var(--purple); }
+    .btn-edit:hover { background: var(--purple); color: white; }
+    .btn-del { background: #FEE2E2; color: var(--red); }
+    .btn-del:hover { background: var(--red); color: white; }
+
+    /* buttons */
+    .btn { padding: 9px 20px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: var(--purple); color: white; }
+    .btn-primary:hover { background: var(--purple-mid); box-shadow: 0 4px 12px rgba(124,58,237,.35); }
+    .btn-secondary { background: white; color: var(--gray-700); border: 1.5px solid var(--gray-200); }
+    .btn-secondary:hover { border-color: var(--purple); color: var(--purple); }
+    .btn-yellow { background: var(--yellow); color: var(--purple-dark); }
+    .btn-yellow:hover { background: var(--yellow-dark); color: white; }
+    .btn-danger { background: white; color: var(--red); border: 1.5px solid #FECACA; }
+    .btn-danger:hover { background: var(--red); color: white; border-color: var(--red); }
+
+    /* form actions bar */
+    .form-actions { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; background: white; border-top: 1px solid var(--gray-200); flex-shrink: 0; }
+
+    /* cats list */
+    .cats-list { display: flex; flex-direction: column; gap: 8px; }
+    .cat-item { display: flex; align-items: center; gap: 12px; background: white; border: 1.5px solid var(--gray-200); border-radius: 8px; padding: 12px 16px; transition: border-color .15s; }
+    .cat-item:hover { border-color: var(--purple); }
+    .cat-item-order { width: 28px; height: 28px; background: var(--yellow-light); color: var(--yellow-dark); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .cat-item-name { flex: 1; font-weight: 600; font-size: 14px; color: var(--gray-900); }
+    .cat-item-count { font-size: 12px; color: var(--gray-400); }
+
+    /* ════════════════════════════
+       LOGIN MODAL
+    ════════════════════════════ */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.55);
+      z-index: 400; display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .overlay.hidden { display: none; }
+
+    .modal-box {
+      background: white; border-radius: 16px; width: 100%; max-width: 400px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.2); overflow: hidden;
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, var(--purple-dark), var(--purple));
+      padding: 28px 28px 24px;
+      color: white;
+      text-align: center;
+    }
+    .modal-header .lock-icon {
+      width: 54px; height: 54px; background: rgba(255,255,255,.15); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+    }
+    .modal-header h2 { font-size: 20px; margin-bottom: 4px; }
+    .modal-header p { font-size: 13px; opacity: .75; }
+
+    .modal-body { padding: 28px; }
+    .modal-field { margin-bottom: 18px; }
+    .modal-field label { display: block; font-size: 13px; font-weight: 600; color: var(--purple-dark); margin-bottom: 6px; }
+    .modal-field input {
+      width: 100%; padding: 11px 14px; border: 1.5px solid var(--gray-200); border-radius: 8px;
+      font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s; color: var(--gray-900);
+    }
+    .modal-field input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
+
+    .modal-error { background: #FEE2E2; color: var(--red); font-size: 13px; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: none; border: 1px solid #FECACA; }
+    .modal-error.show { display: block; }
+
+    .btn-login-submit {
+      width: 100%; padding: 12px; background: var(--purple); color: white; border: none;
+      border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s;
+    }
+    .btn-login-submit:hover { background: var(--purple-mid); box-shadow: 0 4px 14px rgba(124,58,237,.35); }
+
+    .modal-hint { text-align: center; font-size: 12px; color: var(--gray-400); margin-top: 14px; }
+    .modal-hint span { color: var(--purple); font-weight: 600; }
+
+    /* generic confirm modal */
+    .confirm-box {
+      background: white; border-radius: 14px; width: 100%; max-width: 440px;
+      padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .confirm-box h3 { font-size: 17px; color: var(--gray-900); margin-bottom: 8px; }
+    .confirm-box p { font-size: 14px; color: var(--gray-500); margin-bottom: 20px; }
+    .confirm-input-row { margin-bottom: 16px; }
+    .confirm-input-row label { display: block; font-size: 13px; font-weight: 600; color: var(--purple-dark); margin-bottom: 6px; }
+    .confirm-input-row input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 14px; outline: none; transition: border-color .2s; }
+    .confirm-input-row input:focus { border-color: var(--purple); }
+    .confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* toast */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; background: var(--purple-dark); color: white;
+      padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,.2); z-index: 600; display: flex; align-items: center; gap: 10px;
+      animation: slideUp .3s ease;
+    }
+    .toast.success { border-left: 4px solid var(--green); }
+    .toast.error   { border-left: 4px solid var(--red); }
+    .toast.warning { border-left: 4px solid var(--yellow); }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--purple); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     HEADER  (shared)
+══════════════════════════════════════ -->
+<header id="mainHeader">
+  <button class="header-menu-btn" onclick="toggleSidebar()" title="Menu">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+
+  <div class="header-logo" onclick="goHome()">LC <span>Base de Conhecimento</span></div>
+  <span class="header-mode public" id="headerMode">Público</span>
+
+  <!-- search (public only) -->
+  <div class="header-search" id="headerSearch">
+    <input type="text" id="searchInput" placeholder="Digite para filtrar..." oninput="handleSearch(this.value)" />
+  </div>
+
+  <div class="header-right">
+    <!-- login / logout button -->
+    <button class="btn-login" id="btnLoginToggle" onclick="handleLoginClick()">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span id="btnLoginLabel">Entrar</span>
+    </button>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════
+     PUBLIC VIEW
+══════════════════════════════════════ -->
+<div class="layout" id="publicApp">
+  <!-- sidebar -->
+  <nav class="sidebar" id="pubSidebar">
+    <div id="sidebarContent"></div>
+  </nav>
+
+  <!-- main -->
+  <main class="pub-main" id="pubMain"></main>
+</div>
+
+<!-- ══════════════════════════════════════
+     ADMIN VIEW
+══════════════════════════════════════ -->
+<div class="layout" id="adminApp">
+
+  <!-- admin left nav -->
+  <nav class="admin-nav">
+    <div class="admin-nav-title">Conteúdo</div>
+    <button class="admin-nav-btn active" onclick="adminSection('articles')" id="navArticles">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14,2 14,8 20,8"/>
+      </svg>
+      Artigos
+      <span class="nav-badge" id="badgeArticles">0</span>
+    </button>
+    <button class="admin-nav-btn" onclick="adminSection('categories')" id="navCategories">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+      </svg>
+      Categorias
+      <span class="nav-badge" id="badgeCategories">0</span>
+    </button>
+    <button class="admin-nav-btn" onclick="adminSection('comments')" id="navComments">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      </svg>
+      Comentários
+    </button>
+    <div class="admin-nav-title" style="margin-top:20px">Novo</div>
+    <button class="admin-nav-btn" onclick="newArticle()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Novo Artigo
+    </button>
+    <button class="admin-nav-btn" onclick="newCategory()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Nova Categoria
+    </button>
+  </nav>
+
+  <!-- admin center -->
+  <div class="admin-center">
+
+    <!-- ARTICLES section -->
+    <div id="sectionArticles" style="display:flex;flex-direction:column;height:100%">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('list')" id="tabList">Lista de Artigos</button>
+        <button class="tab-btn" onclick="switchTab('edit')" id="tabEdit">Editor de Artigo</button>
+        <div class="tab-actions"></div>
+      </div>
+      <div class="tab-content" style="flex:1">
+
+        <!-- list panel -->
+        <div class="tab-panel active" id="panelList">
+          <div class="list-header">
+            <div class="list-title">Artigos</div>
+            <div class="list-filter">
+              <input class="filter-input" type="text" placeholder="Buscar artigo..." oninput="filterArticles(this.value)" />
+              <select class="filter-select" onchange="filterByCat(this.value)" id="catFilter">
+                <option value="">Todas as categorias</option>
+              </select>
+              <button class="btn btn-yellow" onclick="newArticle()">+ Novo Artigo</button>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Título</th><th>Categoria</th><th>Status</th>
+                <th>Visualizações</th><th>Data</th><th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="articlesTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- edit panel -->
+        <div class="tab-panel" id="panelEdit">
+          <div class="form-section-title">Informações do Artigo</div>
+
+          <div class="form-row">
+            <label>Nome <span class="req">*</span></label>
+            <input class="form-input" type="text" id="fieldTitle" placeholder="Informe o Nome do Artigo..." />
+          </div>
+          <div class="form-row">
+            <label>Descrição</label>
+            <input class="form-input" type="text" id="fieldDescription" placeholder="Informe a descrição do Artigo..." />
+          </div>
+          <div class="form-row-2">
+            <div class="form-row" style="margin-bottom:0">
+              <label>Categoria <span class="req">*</span></label>
+              <select class="form-select" id="fieldCategory"><option value="">Selecione...</option></select>
+            </div>
+            <div class="form-row" style="margin-bottom:0">
+              <label>Prioridade de ordenação</label>
+              <input class="form-input" type="number" id="fieldOrder" placeholder="Ex: 1" min="1" />
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:20px">
+            <label>Status <span class="req">*</span></label>
+            <select class="form-select" id="fieldStatus">
+              <option value="draft">Rascunho</option>
+              <option value="published">Publicado</option>
+            </select>
+          </div>
+
+          <div class="form-row" style="margin-top:8px">
+            <label class="editor-label">Conteúdo <span class="req">*</span></label>
+            <div class="editor-shell">
+              <div class="editor-body" id="editorBody" contenteditable="true"
+                   data-placeholder="Escreva o conteúdo do artigo aqui..."
+                   onkeydown="editorKey(event)"></div>
+
+              <!-- RIGHT TOOLBAR -->
+              <div class="editor-toolbar">
+                <button class="toolbar-btn" title="Negrito" onclick="fmt('bold')"><b>B</b></button>
+                <button class="toolbar-btn" title="Itálico" onclick="fmt('italic')"><i>I</i></button>
+                <button class="toolbar-btn" title="Sublinhado" onclick="fmt('underline')"><u>U</u></button>
+                <button class="toolbar-btn" title="Tachado" onclick="fmt('strikeThrough')"><s>S</s></button>
+                <div class="toolbar-sep"></div>
+                <button class="toolbar-btn" title="Título H1" onclick="fmtBlock('h1')" style="font-size:11px;font-weight:700">H1</button>
+                <button class="toolbar-btn" title="Título H2" onclick="fmtBlock('h2')" style="font-size:11px;font-weight:700">H2</button>
+                <div class="toolbar-sep"></div>
+                <button class="toolbar-btn" title="Lista não ordenada" onclick="fmt('insertUnorderedList')">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/>
+                    <circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/>
+                    <circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+                    <circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/>
+                  </svg>
+                </button>
+                <button class="toolbar-btn" title="Lista ordenada" onclick="fmt('insertOrderedList')">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/>
+                    <path d="M4 6h1v4" stroke-width="1.5"/><path d="M3 17h2M4 17v-2.5" stroke-width="1.5"/>
+                  </svg>
+                </button>
+                <div class="toolbar-sep"></div>
+                <button class="toolbar-btn" title="Alinhar esquerda" onclick="fmt('justifyLeft')">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/>
+                  </svg>
+                </button>
+                <button class="toolbar-btn" title="Centralizar" onclick="fmt('justifyCenter')">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
+                  </svg>
+                </button>
+                <button class="toolbar-btn" title="Alinhar direita" onclick="fmt('justifyRight')">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/>
+                  </svg>
+                </button>
+                <div class="toolbar-sep"></div>
+                <div class="toolbar-color-btn" title="Cor do texto">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <polyline points="4,20 9.5,4 12,4 14.5,4 20,20"/><line x1="6.5" y1="14" x2="17.5" y2="14"/>
+                  </svg>
+                  <input type="color" value="#7C3AED" onchange="fmt('foreColor', this.value)" />
+                </div>
+                <div class="toolbar-color-btn" title="Cor de fundo">
+                  <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-3.12 3.12-1.41-1.42-1.42 1.42 1.41 1.41-6.6 6.6A2 2 0 005 16v3h3a2 2 0 001.42-.59l6.6-6.6 1.41 1.42 1.42-1.42-1.42-1.41 3.12-3.12a1 1 0 000-1.65z"/>
+                  </svg>
+                  <input type="color" value="#FEF3C7" onchange="fmt('hiliteColor', this.value)" />
+                </div>
+                <div class="toolbar-sep"></div>
+                <button class="toolbar-btn" title="Inserir link" onclick="insertLink()">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                  </svg>
+                </button>
+                <button class="toolbar-btn" title="Inserir imagem" onclick="insertImage()">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21,15 16,10 5,21"/>
+                  </svg>
+                </button>
+                <button class="toolbar-btn" title="Inserir tabela" onclick="insertTable()">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+                    <line x1="9" y1="3" x2="9" y2="21"/>
+                  </svg>
+                </button>
+                <button class="toolbar-btn" title="Citação" onclick="fmtBlock('blockquote')">
+                  <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M10 11H4a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v10a1 1 0 01-1 1 3 3 0 00-3 3 1 1 0 01-2 0 5 5 0 015-5zm11 0h-6a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v10a1 1 0 01-1 1 3 3 0 00-3 3 1 1 0 01-2 0 5 5 0 015-5z"/>
+                  </svg>
+                </button>
+                <button class="toolbar-btn" title="Bloco de código" onclick="insertCode()">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/>
+                  </svg>
+                </button>
+                <div class="toolbar-sep"></div>
+                <button class="toolbar-btn" title="Remover formatação" onclick="fmt('removeFormat')" style="color:var(--gray-400)">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- form actions -->
+      <div class="form-actions" id="editActions" style="display:none">
+        <button class="btn btn-danger" onclick="confirmDeleteArticle()" id="btnDeleteArt">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2 2 0 01-2 2H8a2 2 0 01-2-2L5,6"/>
+          </svg>
+          Excluir
+        </button>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-secondary" onclick="cancelEdit()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveArticle()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+              <polyline points="17,21 17,13 7,13 7,21"/>
+              <polyline points="7,3 7,8 15,8"/>
+            </svg>
+            Salvar Artigo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATEGORIES section -->
+    <div id="sectionCategories" style="display:none;flex-direction:column;height:100%">
+      <div class="tab-bar">
+        <button class="tab-btn active">Gerenciar Categorias</button>
+        <div class="tab-actions">
+          <button class="btn btn-yellow" onclick="newCategory()">+ Nova Categoria</button>
+        </div>
+      </div>
+      <div class="tab-content">
+        <div class="list-header"><div class="list-title">Categorias</div></div>
+        <div class="cats-list" id="catsList"></div>
+      </div>
+    </div>
+
+    <!-- COMMENTS section -->
+    <div id="sectionComments" style="display:none;flex-direction:column;height:100%">
+      <div class="tab-bar"><button class="tab-btn active">Comentários</button></div>
+      <div class="tab-content" id="commentsList"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     LOGIN MODAL
+══════════════════════════════════════ -->
+<div class="overlay hidden" id="loginOverlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="lock-icon">
+        <svg width="26" height="26" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0110 0v4"/>
+        </svg>
+      </div>
+      <h2>Área Administrativa</h2>
+      <p>Informe suas credenciais para continuar</p>
+    </div>
+    <div class="modal-body">
+      <div class="modal-error" id="loginError">Usuário ou senha incorretos.</div>
+      <div class="modal-field">
+        <label>Usuário</label>
+        <input type="text" id="loginUser" placeholder="Digite seu usuário..." onkeydown="if(event.key==='Enter') doLogin()" />
+      </div>
+      <div class="modal-field">
+        <label>Senha</label>
+        <input type="password" id="loginPass" placeholder="Digite sua senha..." onkeydown="if(event.key==='Enter') doLogin()" />
+      </div>
+      <button class="btn-login-submit" onclick="doLogin()">Entrar</button>
+      <div class="modal-hint">
+        Credenciais padrão: <span>admin</span> / <span>admin123</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     CONFIRM / FORM MODAL
+══════════════════════════════════════ -->
+<div class="overlay hidden" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">Confirmar</h3>
+    <p id="confirmMsg"></p>
+    <div id="confirmInputs"></div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn btn-primary" id="confirmOkBtn" onclick="runConfirm()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   DATA
+══════════════════════════════════════ */
+const ARTICLES_KEY  = 'lc_articles';
+const CATEGORIES_KEY = 'lc_categories';
+const SESSION_KEY   = 'lc_session';
+
+// Credentials (hashed in a real app — this is a demo)
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'admin123';
+
+function getArticles() {
+  const raw = localStorage.getItem(ARTICLES_KEY);
+  if (raw) return JSON.parse(raw);
+  const d = defaultData();
+  localStorage.setItem(ARTICLES_KEY, JSON.stringify(d.articles));
+  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(d.categories));
+  return d.articles;
+}
+function getCategories() {
+  const raw = localStorage.getItem(CATEGORIES_KEY);
+  if (raw) return JSON.parse(raw);
+  const d = defaultData();
+  localStorage.setItem(ARTICLES_KEY, JSON.stringify(d.articles));
+  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(d.categories));
+  return d.categories;
+}
+function setArticles(a)   { localStorage.setItem(ARTICLES_KEY,  JSON.stringify(a)); }
+function setCategories(c) { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(c)); }
+
+function defaultData() {
+  return {
+    categories: [
+      { id:1, name:'Instalação', order:1 },
+      { id:2, name:'LC ERP', order:2 },
+      { id:3, name:'LC WEB', order:3 },
+      { id:4, name:'LC Pay', order:4 },
+      { id:5, name:'Aplicativos', order:5 },
+      { id:6, name:'Equipamentos', order:6 },
+      { id:7, name:'Retornos e Rejeições', order:7 },
+      { id:8, name:'Utilitários', order:8 },
+      { id:9, name:'Passo a passo', order:9 },
+      { id:10,name:'Rotinas', order:10 },
+    ],
+    articles: [
+      { id:1, title:'Como fazer instalação do banco de dados personalizada (Parte 1)', description:'Guia completo para instalação do banco de dados.', categoryId:1, status:'published', order:1, views:3298, date:'29/09/2022', content:'<h2>Instalação do Banco de Dados - Parte 1</h2><p>Este guia apresenta o processo completo de instalação personalizada do banco de dados do sistema LC.</p><h3>Pré-requisitos</h3><ul><li>Windows 10 ou superior</li><li>Mínimo de 4 GB de RAM</li><li>20 GB livres em disco</li><li>Permissões de administrador</li></ul><p>Siga as etapas abaixo para realizar a instalação corretamente.</p>' },
+      { id:2, title:'Como fazer instalação do banco de dados personalizada (Parte 2)', description:'', categoryId:1, status:'published', order:2, views:1853, date:'29/09/2022', content:'<h2>Instalação - Parte 2</h2><p>Continuação do processo de instalação personalizada.</p>' },
+      { id:3, title:'Como fazer instalação do banco de dados personalizada (Parte 3)', description:'', categoryId:1, status:'published', order:3, views:1675, date:'29/09/2022', content:'<h2>Instalação - Parte 3</h2><p>Terceira parte do processo de instalação.</p>' },
+      { id:4, title:'Como fazer instalação do banco de dados personalizada (Parte 4)', description:'', categoryId:1, status:'published', order:4, views:1508, date:'29/09/2022', content:'<h2>Instalação - Parte 4</h2><p>Finalização e testes do banco de dados instalado.</p>' },
+      { id:5, title:'Como desinstalar o banco de dados da forma correta', description:'', categoryId:1, status:'published', order:5, views:2668, date:'12/09/2022', content:'<h2>Desinstalação do Banco de Dados</h2><p>Guia para remover o banco de dados corretamente sem deixar resíduos.</p>' },
+      { id:6, title:'Como redefinir a senha do Banco de Dados', description:'', categoryId:1, status:'published', order:6, views:739, date:'02/10/2023', content:'<h2>Redefinição de Senha</h2><p>Passos para redefinir a senha do banco de dados com segurança.</p>' },
+    ]
+  };
+}
+
+/* ══════════════════════════════════════
+   AUTH
+══════════════════════════════════════ */
+let isAdmin = !!sessionStorage.getItem(SESSION_KEY);
+
+function handleLoginClick() {
+  if (isAdmin) {
+    logout();
+  } else {
+    openLoginModal();
+  }
+}
+
+function openLoginModal() {
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('loginError').classList.remove('show');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  setTimeout(() => document.getElementById('loginUser').focus(), 100);
+}
+
+function doLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if (user === ADMIN_USER && pass === ADMIN_PASS) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    isAdmin = true;
+    document.getElementById('loginOverlay').classList.add('hidden');
+    enterAdmin();
+  } else {
+    document.getElementById('loginError').classList.add('show');
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  isAdmin = false;
+  exitAdmin();
+  toast('Sessão encerrada.', 'warning');
+}
+
+function enterAdmin() {
+  document.getElementById('publicApp').classList.add('hidden');
+  document.getElementById('adminApp').classList.add('visible');
+  document.getElementById('headerMode').textContent = 'Admin';
+  document.getElementById('headerMode').className = 'header-mode admin';
+  document.getElementById('headerSearch').style.display = 'none';
+  document.getElementById('btnLoginLabel').textContent = 'Sair';
+  document.getElementById('btnLoginToggle').classList.add('active');
+  initAdmin();
+}
+
+function exitAdmin() {
+  document.getElementById('publicApp').classList.remove('hidden');
+  document.getElementById('adminApp').classList.remove('visible');
+  document.getElementById('headerMode').textContent = 'Público';
+  document.getElementById('headerMode').className = 'header-mode public';
+  document.getElementById('headerSearch').style.display = '';
+  document.getElementById('btnLoginLabel').textContent = 'Entrar';
+  document.getElementById('btnLoginToggle').classList.remove('active');
+}
+
+// close login overlay on backdrop click
+document.getElementById('loginOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('loginOverlay'))
+    document.getElementById('loginOverlay').classList.add('hidden');
+});
+
+/* ══════════════════════════════════════
+   PUBLIC — init
+══════════════════════════════════════ */
+let pubState = { categoryId: null, articleId: null, sidebarOpen: true, openCats: new Set([1]) };
+
+function pubInit() {
+  renderSidebar();
+  renderHome();
+  if (isAdmin) enterAdmin();
+}
+
+function toggleSidebar() {
+  if (!isAdmin) {
+    pubState.sidebarOpen = !pubState.sidebarOpen;
+    document.getElementById('pubSidebar').classList.toggle('collapsed', !pubState.sidebarOpen);
+  }
+}
+
+/* ── sidebar ── */
+function renderSidebar() {
+  const cats = getCategories().sort((a,b) => a.order - b.order);
+  const arts = getArticles().filter(a => a.status === 'published');
+  const container = document.getElementById('sidebarContent');
+  container.innerHTML = cats.map(cat => {
+    const catArts = arts.filter(a => a.categoryId === cat.id).sort((a,b) => a.order - b.order);
+    const isOpen = pubState.openCats.has(cat.id);
+    return `
+      <div class="sidebar-section">
+        <button class="sidebar-cat-btn ${cat.id === pubState.categoryId ? 'active':''} ${isOpen ? 'open':''}"
+                onclick="pubToggleCat(${cat.id})">
+          <span>${cat.name}</span>
+          ${catArts.length ? `<span class="chevron">▶</span>` : ''}
+        </button>
+        ${catArts.length ? `
+          <div class="sidebar-articles ${isOpen ? 'open':''}">
+            ${catArts.map(a => `
+              <span class="sidebar-article-link ${a.id === pubState.articleId ? 'active':''}"
+                    onclick="pubViewArticle(${a.id})">${a.title}</span>
+            `).join('')}
+          </div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function pubToggleCat(catId) {
+  if (pubState.openCats.has(catId)) { pubState.openCats.delete(catId); }
+  else { pubState.openCats.add(catId); pubState.categoryId = catId; pubState.articleId = null; renderCategoryView(catId); }
+  renderSidebar();
+}
+
+/* ── home ── */
+function renderHome() {
+  pubState.categoryId = null; pubState.articleId = null;
+  const cats = getCategories().sort((a,b) => a.order - b.order);
+  const arts = getArticles();
+  document.getElementById('pubMain').innerHTML = `
+    <div class="welcome-banner">
+      <h2>Bem-vindo à Base de Conhecimento</h2>
+      <p>Encontre tutoriais, guias e artigos para tirar o máximo do sistema LC.</p>
+    </div>
+    <div class="categories-grid">
+      ${cats.map(cat => {
+        const n = arts.filter(a => a.categoryId === cat.id && a.status === 'published').length;
+        return `<div class="cat-card" onclick="pubSelectCategory(${cat.id})">
+          <div class="cat-card-icon">📁</div>
+          <h3>${cat.name}</h3>
+          <p>${n} artigo${n!==1?'s':''}</p>
+        </div>`;
+      }).join('')}
+    </div>`;
+  renderSidebar();
+}
+
+function goHome() { if (!isAdmin) renderHome(); }
+
+function pubSelectCategory(catId) {
+  pubState.categoryId = catId; pubState.openCats.add(catId);
+  renderCategoryView(catId); renderSidebar();
+}
+
+function renderCategoryView(catId) {
+  const cats = getCategories(); const cat = cats.find(c => c.id === catId);
+  const arts = getArticles().filter(a => a.categoryId === catId && a.status === 'published').sort((a,b) => a.order - b.order);
+  pubState.categoryId = catId; pubState.articleId = null;
+  document.getElementById('pubMain').innerHTML = `
+    <div class="breadcrumb">
+      <span class="bc-link" onclick="renderHome()">Início</span>
+      <span class="sep">›</span>
+      <span>${cat ? cat.name : ''}</span>
+    </div>
+    <div class="cat-header"><h1>${cat ? cat.name : ''}</h1></div>
+    ${arts.length ? `
+      <div class="articles-list">
+        ${arts.map(a => `
+          <div class="article-card" onclick="pubViewArticle(${a.id})">
+            <div class="article-icon">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div>
+              <div class="article-title">${a.title}</div>
+              <div class="article-meta">
+                <span>Publicado em ${a.date||'—'}</span>
+                <span style="display:flex;align-items:center;gap:4px">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  ${(a.views||0).toLocaleString('pt-BR')} visualizações
+                </span>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>` : `
+      <div class="empty-state">
+        <svg width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/>
+        </svg>
+        <p>Nenhum artigo publicado nesta categoria.</p>
+      </div>`}`;
+}
+
+function pubViewArticle(id) {
+  const arts = getArticles(); const cats = getCategories();
+  const art = arts.find(a => a.id === id); if (!art) return;
+  const cat = cats.find(c => c.id === art.categoryId);
+  pubState.articleId = id; pubState.categoryId = art.categoryId;
+  pubState.openCats.add(art.categoryId);
+  // increment views
+  art.views = (art.views||0) + 1;
+  setArticles(arts.map(a => a.id===id ? art : a));
+  document.getElementById('pubMain').innerHTML = `
+    <div class="article-view">
+      <div class="breadcrumb">
+        <span class="bc-link" onclick="renderHome()">Início</span>
+        <span class="sep">›</span>
+        <span class="bc-link" onclick="pubSelectCategory(${cat?cat.id:0})">${cat?cat.name:''}</span>
+        <span class="sep">›</span>
+        <span style="color:var(--gray-500)">${art.title}</span>
+      </div>
+      <h1 class="article-view-title">${art.title}</h1>
+      <div class="article-view-meta">
+        <span class="article-badge">${cat?cat.name:''}</span>
+        <span>Publicado em ${art.date||'—'}</span>
+        <span style="display:flex;align-items:center;gap:4px">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+          ${art.views.toLocaleString('pt-BR')} visualizações
+        </span>
+      </div>
+      <hr class="article-divider" />
+      <div class="article-content">${art.content||'<p><em>Sem conteúdo.</em></p>'}</div>
+    </div>`;
+  renderSidebar();
+}
+
+/* ── search ── */
+function handleSearch(q) {
+  if (!q.trim()) { renderHome(); return; }
+  const lower = q.toLowerCase();
+  const arts = getArticles().filter(a => a.status==='published' && (
+    a.title.toLowerCase().includes(lower) || (a.description||'').toLowerCase().includes(lower)
+  ));
+  const cats = getCategories();
+  document.getElementById('pubMain').innerHTML = `
+    <div class="breadcrumb">
+      <span class="bc-link" onclick="renderHome()">Início</span>
+      <span class="sep">›</span><span style="color:var(--gray-500)">Pesquisa</span>
+    </div>
+    <div class="search-info">${arts.length} resultado${arts.length!==1?'s':''} para <strong>"${q}"</strong></div>
+    ${arts.length ? `
+      <div class="articles-list">
+        ${arts.map(a => {
+          const cat = cats.find(c => c.id===a.categoryId);
+          return `<div class="article-card" onclick="pubViewArticle(${a.id})">
+            <div class="article-icon">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+              </svg>
+            </div>
+            <div>
+              <div class="article-title">${a.title}</div>
+              <div class="article-meta">
+                <span style="color:var(--purple);font-weight:500">${cat?cat.name:''}</span>
+                <span>${a.date||'—'}</span>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>` : `
+      <div class="empty-state">
+        <svg width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <p>Nenhum artigo encontrado.</p>
+      </div>`}`;
+}
+
+/* ══════════════════════════════════════
+   ADMIN — init & sections
+══════════════════════════════════════ */
+let adminState = { section:'articles', tab:'list', editingId:null, filterText:'', filterCat:'' };
+let confirmCb = null;
+
+function initAdmin() {
+  refreshBadges();
+  renderArticlesList();
+  populateCatFilters();
+  renderCatsList();
+  renderComments();
+}
+
+function refreshBadges() {
+  document.getElementById('badgeArticles').textContent   = getArticles().length;
+  document.getElementById('badgeCategories').textContent = getCategories().length;
+}
+
+function adminSection(name) {
+  adminState.section = name;
+  ['articles','categories','comments'].forEach(s => {
+    const id = 'section' + s.charAt(0).toUpperCase() + s.slice(1);
+    document.getElementById(id).style.display = s===name ? 'flex' : 'none';
+  });
+  ['navArticles','navCategories','navComments'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+  const map = { articles:'navArticles', categories:'navCategories', comments:'navComments' };
+  document.getElementById(map[name])?.classList.add('active');
+  if (name==='categories') renderCatsList();
+  if (name==='comments')   renderComments();
+}
+
+/* ── tabs ── */
+function switchTab(tab) {
+  adminState.tab = tab;
+  ['list','edit'].forEach(t => {
+    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active', t===tab);
+    document.getElementById('panel'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active', t===tab);
+  });
+  document.getElementById('editActions').style.display = tab==='edit' ? 'flex' : 'none';
+}
+
+/* ── articles list ── */
+function renderArticlesList() {
+  const cats = getCategories();
+  let arts = getArticles().sort((a,b) => a.order-b.order);
+  if (adminState.filterText) {
+    const q = adminState.filterText.toLowerCase();
+    arts = arts.filter(a => a.title.toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q));
+  }
+  if (adminState.filterCat) arts = arts.filter(a => a.categoryId == adminState.filterCat);
+
+  const tbody = document.getElementById('articlesTableBody');
+  if (!arts.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:40px">Nenhum artigo encontrado.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = arts.map(a => {
+    const cat = cats.find(c => c.id===a.categoryId);
+    return `<tr>
+      <td style="max-width:320px">
+        <div style="font-weight:600;color:var(--gray-900)">${a.title}</div>
+        ${a.description ? `<div style="font-size:12px;color:var(--gray-400);margin-top:2px">${a.description}</div>` : ''}
+      </td>
+      <td><span style="color:var(--purple);font-weight:500;font-size:12px">${cat?cat.name:'—'}</span></td>
+      <td><span class="status-badge ${a.status==='published'?'status-published':'status-draft'}">${a.status==='published'?'● Publicado':'○ Rascunho'}</span></td>
+      <td>${(a.views||0).toLocaleString('pt-BR')}</td>
+      <td>${a.date||'—'}</td>
+      <td><div class="action-btns">
+        <button class="btn-sm btn-edit" onclick="editArticle(${a.id})">Editar</button>
+        <button class="btn-sm btn-del"  onclick="deleteArticle(${a.id})">Excluir</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterArticles(v) { adminState.filterText=v; renderArticlesList(); }
+function filterByCat(v)    { adminState.filterCat=v;  renderArticlesList(); }
+
+function populateCatFilters() {
+  const cats = getCategories().sort((a,b)=>a.order-b.order);
+  // filter dropdown
+  const sel = document.getElementById('catFilter');
+  sel.innerHTML = '<option value="">Todas as categorias</option>';
+  cats.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; sel.appendChild(o); });
+  // form dropdown
+  populateCatDropdown();
+}
+
+function populateCatDropdown() {
+  const cats = getCategories().sort((a,b)=>a.order-b.order);
+  const sel = document.getElementById('fieldCategory');
+  sel.innerHTML = '<option value="">Selecione...</option>';
+  cats.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; sel.appendChild(o); });
+}
+
+/* ── new / edit ── */
+function newArticle() {
+  adminState.editingId = null;
+  clearForm();
+  document.getElementById('btnDeleteArt').style.display = 'none';
+  switchTab('edit');
+  adminSection('articles');
+}
+
+function editArticle(id) {
+  const a = getArticles().find(x=>x.id===id); if (!a) return;
+  adminState.editingId = id;
+  populateCatDropdown();
+  document.getElementById('fieldTitle').value       = a.title;
+  document.getElementById('fieldDescription').value = a.description||'';
+  document.getElementById('fieldCategory').value    = a.categoryId||'';
+  document.getElementById('fieldOrder').value       = a.order||'';
+  document.getElementById('fieldStatus').value      = a.status||'draft';
+  document.getElementById('editorBody').innerHTML   = a.content||'';
+  document.getElementById('btnDeleteArt').style.display = 'inline-flex';
+  switchTab('edit');
+  adminSection('articles');
+}
+
+function clearForm() {
+  ['fieldTitle','fieldDescription','fieldOrder'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('fieldStatus').value = 'draft';
+  document.getElementById('editorBody').innerHTML = '';
+  populateCatDropdown();
+}
+
+function cancelEdit() { clearForm(); adminState.editingId=null; switchTab('list'); renderArticlesList(); }
+
+function saveArticle() {
+  const title      = document.getElementById('fieldTitle').value.trim();
+  const categoryId = parseInt(document.getElementById('fieldCategory').value);
+  const status     = document.getElementById('fieldStatus').value;
+  if (!title)      { toast('Informe o nome do artigo.','error'); return; }
+  if (!categoryId) { toast('Selecione uma categoria.','error'); return; }
+
+  const arts = getArticles();
+  const now  = new Date();
+  const date = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+
+  if (adminState.editingId) {
+    const i = arts.findIndex(a=>a.id===adminState.editingId);
+    if (i!==-1) arts[i] = { ...arts[i], title, description:document.getElementById('fieldDescription').value.trim(), categoryId, order:parseInt(document.getElementById('fieldOrder').value)||arts[i].order, status, content:document.getElementById('editorBody').innerHTML };
+    toast('Artigo atualizado!','success');
+  } else {
+    const newId = Math.max(0,...arts.map(a=>a.id)) + 1;
+    arts.push({ id:newId, title, description:document.getElementById('fieldDescription').value.trim(), categoryId, order:parseInt(document.getElementById('fieldOrder').value)||newId, status, views:0, date, content:document.getElementById('editorBody').innerHTML });
+    toast('Artigo criado!','success');
+  }
+  setArticles(arts);
+  refreshBadges();
+  switchTab('list');
+  renderArticlesList();
+  adminState.editingId = null;
+}
+
+function deleteArticle(id) {
+  const a = getArticles().find(x=>x.id===id);
+  openConfirm('Excluir Artigo', `Deseja excluir "<strong>${a?.title}</strong>"? Esta ação não pode ser desfeita.`, null, null, () => {
+    setArticles(getArticles().filter(x=>x.id!==id));
+    refreshBadges(); renderArticlesList(); toast('Artigo excluído.','warning');
+  }, true);
+}
+
+function confirmDeleteArticle() {
+  if (adminState.editingId) { deleteArticle(adminState.editingId); cancelEdit(); }
+}
+
+/* ── categories ── */
+function renderCatsList() {
+  const cats = getCategories().sort((a,b)=>a.order-b.order);
+  const arts = getArticles();
+  const el   = document.getElementById('catsList');
+  if (!cats.length) { el.innerHTML='<p style="color:var(--gray-400);font-size:14px">Nenhuma categoria cadastrada.</p>'; return; }
+  el.innerHTML = cats.map(cat => {
+    const n = arts.filter(a=>a.categoryId===cat.id).length;
+    return `<div class="cat-item">
+      <div class="cat-item-order">${cat.order}</div>
+      <div class="cat-item-name">${cat.name}</div>
+      <div class="cat-item-count">${n} artigo${n!==1?'s':''}</div>
+      <div class="action-btns">
+        <button class="btn-sm btn-edit" onclick="editCategory(${cat.id})">Editar</button>
+        <button class="btn-sm btn-del"  onclick="deleteCategory(${cat.id})">Excluir</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function newCategory() {
+  adminSection('categories');
+  openConfirm('Nova Categoria', '', 'Nome da categoria', 'Prioridade', (name, order) => {
+    if (!name.trim()) { toast('Informe o nome.','error'); return; }
+    const cats = getCategories();
+    const newId = Math.max(0,...cats.map(c=>c.id)) + 1;
+    cats.push({ id:newId, name:name.trim(), order:parseInt(order)||(cats.length+1) });
+    setCategories(cats); refreshBadges(); renderCatsList(); populateCatFilters(); toast('Categoria criada!','success');
+  }, false);
+}
+
+function editCategory(id) {
+  const cat = getCategories().find(c=>c.id===id); if (!cat) return;
+  openConfirm('Editar Categoria', '', 'Nome da categoria', 'Prioridade', (name, order) => {
+    if (!name.trim()) { toast('Informe o nome.','error'); return; }
+    setCategories(getCategories().map(c => c.id===id ? {...c, name:name.trim(), order:parseInt(order)||c.order} : c));
+    refreshBadges(); renderCatsList(); populateCatFilters(); toast('Categoria atualizada!','success');
+  }, false, cat.name, String(cat.order));
+}
+
+function deleteCategory(id) {
+  const cat = getCategories().find(c=>c.id===id);
+  const n   = getArticles().filter(a=>a.categoryId===id).length;
+  openConfirm('Excluir Categoria', `Deseja excluir "<strong>${cat?.name}</strong>"?${n>0?` Possui <strong>${n} artigo(s)</strong> associados.`:''}`, null, null, () => {
+    setCategories(getCategories().filter(c=>c.id!==id));
+    refreshBadges(); renderCatsList(); populateCatFilters(); toast('Categoria excluída.','warning');
+  }, true);
+}
+
+/* ── comments ── */
+function renderComments() {
+  document.getElementById('commentsList').innerHTML = `
+    <div style="text-align:center;padding:60px 20px;color:var(--gray-400)">
+      <svg width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:14px;opacity:.35">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      </svg>
+      <p style="font-size:15px">Nenhum comentário ainda.</p>
+    </div>`;
+}
+
+/* ── editor ── */
+function fmt(cmd, val)  { document.getElementById('editorBody').focus(); document.execCommand(cmd, false, val||null); }
+function fmtBlock(tag)  { document.getElementById('editorBody').focus(); document.execCommand('formatBlock', false, tag); }
+function insertLink()   { const u=prompt('URL do link:'); if(u){ document.getElementById('editorBody').focus(); document.execCommand('createLink',false,u); } }
+function insertImage()  { const u=prompt('URL da imagem:'); if(u){ document.getElementById('editorBody').focus(); document.execCommand('insertImage',false,u); setTimeout(()=>{document.querySelectorAll('#editorBody img').forEach(i=>{i.style.maxWidth='100%';i.style.borderRadius='6px';});},50); } }
+function insertCode()   { document.getElementById('editorBody').focus(); document.execCommand('insertHTML',false,'<pre><code>// código aqui</code></pre><p><br></p>'); }
+function insertTable()  {
+  const r=parseInt(prompt('Linhas:','3')||'3'), c=parseInt(prompt('Colunas:','3')||'3');
+  if(!r||!c) return;
+  let h='<table><thead><tr>'; for(let i=0;i<c;i++) h+=`<th>Coluna ${i+1}</th>`;
+  h+='</tr></thead><tbody>'; for(let i=0;i<r;i++){ h+='<tr>'; for(let j=0;j<c;j++) h+='<td>Célula</td>'; h+='</tr>'; }
+  h+='</tbody></table><p><br></p>';
+  document.getElementById('editorBody').focus(); document.execCommand('insertHTML',false,h);
+}
+function editorKey(e) { if(e.ctrlKey && e.key==='s'){ e.preventDefault(); saveArticle(); } }
+
+/* ══════════════════════════════════════
+   CONFIRM MODAL
+══════════════════════════════════════ */
+function openConfirm(title, msg, label1, label2, cb, isDanger, val1='', val2='') {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').innerHTML     = msg;
+  const inputs = document.getElementById('confirmInputs');
+  inputs.innerHTML = '';
+  if (label1) {
+    inputs.innerHTML += `<div class="confirm-input-row"><label>${label1}</label><input type="text" id="ci1" value="${val1}" /></div>`;
+  }
+  if (label2) {
+    inputs.innerHTML += `<div class="confirm-input-row"><label>${label2}</label><input type="number" id="ci2" value="${val2}" min="1" /></div>`;
+  }
+  const btn = document.getElementById('confirmOkBtn');
+  btn.textContent = isDanger ? 'Excluir' : 'Salvar';
+  btn.style.background = isDanger ? 'var(--red)' : '';
+  btn.style.color      = isDanger ? 'white' : '';
+  confirmCb = () => {
+    const v1 = document.getElementById('ci1')?.value || '';
+    const v2 = document.getElementById('ci2')?.value || '';
+    cb(v1, v2);
+  };
+  document.getElementById('confirmOverlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('ci1')?.focus(), 100);
+}
+
+function closeConfirm() { document.getElementById('confirmOverlay').classList.add('hidden'); confirmCb=null; }
+function runConfirm()   { if(confirmCb) confirmCb(); closeConfirm(); }
+
+document.getElementById('confirmOverlay').addEventListener('click', e => {
+  if (e.target===document.getElementById('confirmOverlay')) closeConfirm();
+});
+
+/* ══════════════════════════════════════
+   TOAST
+══════════════════════════════════════ */
+function toast(msg, type='success') {
+  document.querySelector('.toast')?.remove();
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const ic = {success:'✓', error:'✕', warning:'⚠'};
+  t.innerHTML = `<span>${ic[type]||'•'}</span> ${msg}`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+/* ══════════════════════════════════════
+   BOOTSTRAP
+══════════════════════════════════════ */
+pubInit();
+</script>
+</body>
+</html>

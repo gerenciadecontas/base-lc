@@ -815,20 +815,34 @@
 ══════════════════════════════════════ -->
 <!-- IMG EDIT MODAL -->
 <div class="img-edit-modal" id="imgEditModal" style="display:none">
-  <div class="img-edit-box">
-    <h3>✏️ Editar bloco de imagem</h3>
-    <label>Imagem</label>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <button class="btn btn-secondary" style="font-size:12px;flex:1" onclick="imgEditUpload()">📁 Selecionar arquivo</button>
-      <button class="btn btn-secondary" style="font-size:12px;flex:1" onclick="imgEditPaste()">📋 Colar da área de transferência</button>
+  <div class="img-edit-box" style="width:90vw;max-width:900px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin:0">✏️ Editar imagem</h3>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" style="font-size:12px" onclick="imgEditUpload()">📁 Arquivo</button>
+        <button class="btn btn-secondary" style="font-size:12px" onclick="imgEditPaste()">📋 Colar</button>
+        <button class="btn btn-secondary" style="font-size:12px;color:var(--red)" onclick="clearAnnotations()">🗑️ Limpar marcações</button>
+      </div>
     </div>
-    <label>Legenda</label>
-    <input type="text" id="imgEditCaption" placeholder="Ex: Tela de configuração do sistema..." />
-    <label>Anotação (aparece abaixo da legenda)</label>
-    <textarea id="imgEditNote" rows="2" placeholder="Ex: Atenção: clique em Salvar após essa etapa."></textarea>
-    <div class="img-edit-actions">
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Arraste sobre a imagem para desenhar retângulos vermelhos nas áreas que deseja destacar.</div>
+    <div style="position:relative;border:2px solid #111;border-radius:6px;overflow:hidden;background:#f3f4f6;min-height:200px;cursor:crosshair" id="imgAnnotateWrap">
+      <img id="imgAnnotateBase" style="display:block;width:100%;user-select:none;pointer-events:none" />
+      <canvas id="imgAnnotateCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
+      <div id="imgAnnotatePlaceholder" style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--gray-400);font-size:13px">Nenhuma imagem carregada — use os botões acima</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px">Legenda</label>
+        <input type="text" id="imgEditCaption" placeholder="Ex: Tela de configuração..." style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;outline:none" />
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--gray-500);display:block;margin-bottom:4px">Anotação / Aviso</label>
+        <input type="text" id="imgEditNote" placeholder="Ex: Atenção: clique em Salvar após isso." style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;outline:none" />
+      </div>
+    </div>
+    <div class="img-edit-actions" style="margin-top:16px">
       <button class="btn btn-secondary" onclick="closeImgEdit()">Cancelar</button>
-      <button class="btn btn-primary" onclick="applyImgEdit()">Aplicar</button>
+      <button class="btn btn-primary" onclick="applyImgEdit()">✅ Salvar imagem</button>
     </div>
   </div>
 </div>
@@ -1410,22 +1424,85 @@ function saveArticle() {
 
 // ── IMG BLOCK EDITOR ──
 let _currentImgBlock = null;
-let _imgEditSrc = null;
+let _annoRects = [];
+let _annoDrawing = false;
+let _annoStart = null;
+let _annoCurrentRect = null;
 
 function editImgBlock(fig) {
   _currentImgBlock = fig;
-  _imgEditSrc = fig.querySelector('img') ? fig.querySelector('img').src : null;
+  _annoRects = [];
+  const existingImg = fig.querySelector('img');
   const caption = fig.querySelector('.img-caption');
   const note = fig.querySelector('.img-note');
   document.getElementById('imgEditCaption').value = caption ? caption.textContent.replace('Legenda da imagem...','') : '';
-  document.getElementById('imgEditNote').value = note ? note.textContent : '';
+  document.getElementById('imgEditNote').value = note ? (note.textContent.replace('⚠️ ','')) : '';
+  const baseImg = document.getElementById('imgAnnotateBase');
+  const placeholder = document.getElementById('imgAnnotatePlaceholder');
+  if (existingImg) {
+    baseImg.src = existingImg.src;
+    baseImg.style.display = 'block';
+    placeholder.style.display = 'none';
+    setTimeout(initAnnotateCanvas, 100);
+  } else {
+    baseImg.src = '';
+    baseImg.style.display = 'none';
+    placeholder.style.display = 'flex';
+  }
   document.getElementById('imgEditModal').style.display = 'flex';
 }
+
+function initAnnotateCanvas() {
+  const img = document.getElementById('imgAnnotateBase');
+  const canvas = document.getElementById('imgAnnotateCanvas');
+  canvas.width = img.offsetWidth;
+  canvas.height = img.offsetHeight;
+  redrawAnnotations();
+  canvas.onmousedown = e => {
+    const r = canvas.getBoundingClientRect();
+    _annoDrawing = true;
+    _annoStart = { x: e.clientX - r.left, y: e.clientY - r.top };
+    _annoCurrentRect = null;
+  };
+  canvas.onmousemove = e => {
+    if (!_annoDrawing) return;
+    const r = canvas.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    _annoCurrentRect = { x: Math.min(_annoStart.x, x), y: Math.min(_annoStart.y, y), w: Math.abs(x - _annoStart.x), h: Math.abs(y - _annoStart.y) };
+    redrawAnnotations(_annoCurrentRect);
+  };
+  canvas.onmouseup = e => {
+    if (!_annoDrawing) return;
+    _annoDrawing = false;
+    if (_annoCurrentRect && _annoCurrentRect.w > 5 && _annoCurrentRect.h > 5) _annoRects.push({..._annoCurrentRect});
+    _annoCurrentRect = null;
+    redrawAnnotations();
+  };
+}
+
+function redrawAnnotations(preview) {
+  const canvas = document.getElementById('imgAnnotateCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#EF4444';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([]);
+  _annoRects.forEach(r => ctx.strokeRect(r.x, r.y, r.w, r.h));
+  if (preview) {
+    ctx.strokeStyle = 'rgba(239,68,68,0.7)';
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(preview.x, preview.y, preview.w, preview.h);
+  }
+}
+
+function clearAnnotations() { _annoRects = []; redrawAnnotations(); }
 
 function closeImgEdit() {
   document.getElementById('imgEditModal').style.display = 'none';
   _currentImgBlock = null;
-  _imgEditSrc = null;
+  _annoRects = [];
+  const canvas = document.getElementById('imgAnnotateCanvas');
+  canvas.onmousedown = canvas.onmousemove = canvas.onmouseup = null;
 }
 
 function imgEditUpload() {
@@ -1433,7 +1510,14 @@ function imgEditUpload() {
   input.type = 'file'; input.accept = 'image/*';
   input.onchange = e => {
     const reader = new FileReader();
-    reader.onload = ev => { _imgEditSrc = ev.target.result; };
+    reader.onload = ev => {
+      const baseImg = document.getElementById('imgAnnotateBase');
+      baseImg.src = ev.target.result;
+      baseImg.style.display = 'block';
+      document.getElementById('imgAnnotatePlaceholder').style.display = 'none';
+      _annoRects = [];
+      setTimeout(initAnnotateCanvas, 100);
+    };
     reader.readAsDataURL(e.target.files[0]);
   };
   input.click();
@@ -1446,43 +1530,73 @@ function imgEditPaste() {
       if (imgType) {
         item.getType(imgType).then(blob => {
           const reader = new FileReader();
-          reader.onload = ev => { _imgEditSrc = ev.target.result; toast('Imagem colada!','success'); };
+          reader.onload = ev => {
+            const baseImg = document.getElementById('imgAnnotateBase');
+            baseImg.src = ev.target.result;
+            baseImg.style.display = 'block';
+            document.getElementById('imgAnnotatePlaceholder').style.display = 'none';
+            _annoRects = [];
+            setTimeout(initAnnotateCanvas, 100);
+            toast('Imagem colada!', 'success');
+          };
           reader.readAsDataURL(blob);
         });
         return;
       }
     }
-    toast('Nenhuma imagem encontrada na área de transferência.','error');
-  }).catch(() => toast('Permissão negada. Use Ctrl+V dentro do editor.','error'));
+    toast('Nenhuma imagem encontrada na área de transferência.', 'error');
+  }).catch(() => toast('Permissão negada. Use Ctrl+V dentro do editor.', 'error'));
 }
 
 function applyImgEdit() {
   if (!_currentImgBlock) return;
   const caption = document.getElementById('imgEditCaption').value.trim();
   const note = document.getElementById('imgEditNote').value.trim();
+  const baseImg = document.getElementById('imgAnnotateBase');
 
-  if (_imgEditSrc) {
-    let img = _currentImgBlock.querySelector('img');
-    const placeholder = _currentImgBlock.querySelector('.img-placeholder');
+  if (baseImg.src && baseImg.src !== window.location.href) {
+    const canvas = document.createElement('canvas');
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const scaleX = img.naturalWidth / document.getElementById('imgAnnotateCanvas').width;
+      const scaleY = img.naturalHeight / document.getElementById('imgAnnotateCanvas').height;
+      ctx.strokeStyle = '#EF4444';
+      ctx.lineWidth = Math.max(3, 3 * scaleX);
+      _annoRects.forEach(r => ctx.strokeRect(r.x * scaleX, r.y * scaleY, r.w * scaleX, r.h * scaleY));
+      const finalSrc = canvas.toDataURL('image/png');
+      setImgBlockContent(finalSrc, caption, note);
+    };
+    img.src = baseImg.src;
+  } else {
+    setImgBlockContent(null, caption, note);
+  }
+}
+
+function setImgBlockContent(src, caption, note) {
+  const fig = _currentImgBlock;
+  if (src) {
+    let img = fig.querySelector('img');
+    const placeholder = fig.querySelector('.img-placeholder');
     if (!img) {
       img = document.createElement('img');
       img.style.cssText = 'width:100%;display:block;border-bottom:2px solid #111';
       if (placeholder) placeholder.replaceWith(img);
-      else _currentImgBlock.insertBefore(img, _currentImgBlock.firstChild);
+      else fig.insertBefore(img, fig.firstChild);
     }
-    img.src = _imgEditSrc;
+    img.src = src;
   }
-
-  let capEl = _currentImgBlock.querySelector('.img-caption');
-  if (!capEl) { capEl = document.createElement('figcaption'); capEl.className = 'img-caption'; _currentImgBlock.appendChild(capEl); }
+  let capEl = fig.querySelector('.img-caption');
+  if (!capEl) { capEl = document.createElement('figcaption'); capEl.className = 'img-caption'; fig.appendChild(capEl); }
   capEl.textContent = caption || 'Legenda da imagem...';
-
-  let noteEl = _currentImgBlock.querySelector('.img-note');
+  let noteEl = fig.querySelector('.img-note');
   if (note) {
-    if (!noteEl) { noteEl = document.createElement('div'); noteEl.className = 'img-note'; noteEl.style.cssText = 'padding:6px 12px;font-size:12px;color:#b45309;background:#fffbeb;border-top:1px solid #fde68a'; _currentImgBlock.appendChild(noteEl); }
+    if (!noteEl) { noteEl = document.createElement('div'); noteEl.className = 'img-note'; noteEl.style.cssText = 'padding:6px 12px;font-size:12px;color:#b45309;background:#fffbeb;border-top:1px solid #fde68a'; fig.appendChild(noteEl); }
     noteEl.textContent = '⚠️ ' + note;
   } else if (noteEl) { noteEl.remove(); }
-
   closeImgEdit();
 }
 

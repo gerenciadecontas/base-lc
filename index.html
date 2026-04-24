@@ -266,7 +266,7 @@
     .admin-nav {
       width: 220px; background: var(--surface-0); border-right: 1px solid var(--border-1);
       flex-shrink: 0; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px;
-      height: calc(100vh - 56px); overflow: visible; position: relative;
+      height: calc(100vh - 56px); overflow-y: auto;
     }
     .admin-nav-title { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .1em; padding: 8px 10px 4px; }
     .admin-nav-btn {
@@ -534,106 +534,6 @@
     ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
     ::-webkit-scrollbar-thumb:hover { background: var(--surface-3); background-clip: content-box; }
 
-    /* ════════════════════════════
-       SIDEBAR FLYOUT (efeito aba)
-    ════════════════════════════ */
-
-    /* Botão no rodapé do admin-nav */
-    .chat-nav-btn {
-      display: flex; align-items: center; gap: 10px; width: 100%;
-      padding: 7px 10px; background: none; border: 1px solid transparent; cursor: pointer;
-      font-size: 12.5px; color: var(--text-2); text-align: left;
-      border-radius: 7px; transition: all .12s; position: relative;
-    }
-    .chat-nav-btn:hover { background: var(--surface-1); color: var(--text-1); }
-    .chat-nav-btn.active {
-      background: rgba(167,139,250,.15);
-      color: var(--accent);
-      border-color: rgba(167,139,250,.25);
-      font-weight: 600;
-    }
-    /* indicador colorido na borda esquerda quando ativo */
-    .chat-nav-btn.active::before {
-      content: '';
-      position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
-      width: 3px; height: 20px;
-      background: var(--accent);
-      border-radius: 0 3px 3px 0;
-    }
-
-    /* Painel que desliza para fora do sidebar */
-    .flyout-panel {
-      position: absolute;
-      top: 0;
-      left: 100%;
-      height: 100%;
-      width: 260px;
-      background: var(--surface-0);
-      border-right: 1px solid var(--border-1);
-      border-left: 1px solid var(--border-1);
-      z-index: 490;
-      display: flex;
-      flex-direction: column;
-      transform: translateX(-110%);
-      pointer-events: none;
-      opacity: 0;
-      transition: transform .22s cubic-bezier(.4,0,.2,1), opacity .18s ease;
-    }
-    .flyout-panel.open {
-      transform: translateX(0);
-      pointer-events: auto;
-      opacity: 1;
-    }
-
-    .flyout-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 16px 10px;
-      border-bottom: 1px solid var(--border-1);
-      flex-shrink: 0;
-    }
-    .flyout-header-title {
-      font-size: 11px; font-weight: 700; color: var(--text-3);
-      text-transform: uppercase; letter-spacing: .1em;
-    }
-    .flyout-close {
-      background: none; border: none; color: var(--text-3); cursor: pointer;
-      padding: 4px; border-radius: 5px; display: flex; align-items: center;
-      transition: background .12s, color .12s;
-    }
-    .flyout-close:hover { background: var(--surface-1); color: var(--text-1); }
-
-    .flyout-body {
-      flex: 1; overflow-y: auto; padding: 10px 8px;
-      display: flex; flex-direction: column; gap: 2px;
-    }
-    .flyout-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 9px 10px; border-radius: 7px; cursor: pointer;
-      transition: background .12s; border: 1px solid transparent;
-    }
-    .flyout-item:hover { background: var(--surface-1); }
-    .flyout-item.active { background: rgba(167,139,250,.1); border-color: rgba(167,139,250,.15); }
-    .flyout-avatar {
-      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-      background: var(--surface-3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700; color: var(--text-2);
-    }
-    .flyout-item-info { flex: 1; min-width: 0; }
-    .flyout-item-name { font-size: 13px; font-weight: 500; color: var(--text-1); }
-    .flyout-item-sub { font-size: 11.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .flyout-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--ok); flex-shrink: 0;
-    }
-    .flyout-dot.away { background: var(--warn); }
-    .flyout-dot.off { background: var(--surface-3); }
-
-    .flyout-section-label {
-      font-size: 10px; font-weight: 700; color: var(--text-3);
-      text-transform: uppercase; letter-spacing: .1em;
-      padding: 10px 10px 4px; margin-top: 4px;
-    }
   </style>
   <script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
 </head>
@@ -728,72 +628,6 @@
       Nova Categoria
     </button>
 
-    <!-- separador + botão chat no rodapé do sidebar -->
-    <div style="flex:1"></div>
-    <div style="border-top:1px solid var(--border-1); margin: 8px 0"></div>
-    <button class="chat-nav-btn" id="chatNavBtn" onclick="toggleChat()">
-      <span class="chat-nav-badge" id="chatBadge"></span>
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-      </svg>
-      Chat
-    </button>
-
-    <!-- Painel flyout ancorado no admin-nav -->
-    <div class="flyout-panel" id="flyoutPanel">
-      <div class="flyout-header">
-        <span class="flyout-header-title">Equipe Online</span>
-        <button class="flyout-close" onclick="toggleChat()" title="Fechar">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
-      <div class="flyout-body">
-        <div class="flyout-section-label">Online agora</div>
-        <div class="flyout-item">
-          <div class="flyout-avatar" style="background:rgba(167,139,250,.2);color:var(--accent)">SA</div>
-          <div class="flyout-item-info">
-            <div class="flyout-item-name">Sayali Santos</div>
-            <div class="flyout-item-sub">Disponível</div>
-          </div>
-          <div class="flyout-dot"></div>
-        </div>
-        <div class="flyout-item">
-          <div class="flyout-avatar" style="background:rgba(34,211,238,.2);color:var(--accent-2)">RA</div>
-          <div class="flyout-item-info">
-            <div class="flyout-item-name">Rohit Agarw.</div>
-            <div class="flyout-item-sub">Disponível</div>
-          </div>
-          <div class="flyout-dot"></div>
-        </div>
-        <div class="flyout-item">
-          <div class="flyout-avatar" style="background:rgba(74,222,128,.2);color:var(--ok)">JA</div>
-          <div class="flyout-item-info">
-            <div class="flyout-item-name">John Alex</div>
-            <div class="flyout-item-sub">Ausente</div>
-          </div>
-          <div class="flyout-dot away"></div>
-        </div>
-        <div class="flyout-item">
-          <div class="flyout-avatar" style="background:rgba(251,191,36,.2);color:var(--warn)">RD</div>
-          <div class="flyout-item-info">
-            <div class="flyout-item-name">Rosy Done</div>
-            <div class="flyout-item-sub">Offline</div>
-          </div>
-          <div class="flyout-dot off"></div>
-        </div>
-        <div class="flyout-section-label" style="margin-top:8px">Grupos (6)</div>
-        <div class="flyout-item">
-          <div class="flyout-avatar" style="font-size:11px">🎨</div>
-          <div class="flyout-item-info"><div class="flyout-item-name">UI/UX Designing</div></div>
-        </div>
-        <div class="flyout-item">
-          <div class="flyout-avatar" style="font-size:11px">💻</div>
-          <div class="flyout-item-info"><div class="flyout-item-name">Web Development</div></div>
-        </div>
-      </div>
-    </div>
   </nav>
 
   <!-- admin center -->
@@ -2159,17 +1993,5 @@ pubInit();
 </script>
 
 
-<script>
-/* ══════════════════════════════════════
-   FLYOUT SIDEBAR LOGIC
-══════════════════════════════════════ */
-let chatOpen = false;
-
-function toggleChat() {
-  chatOpen = !chatOpen;
-  document.getElementById('flyoutPanel').classList.toggle('open', chatOpen);
-  document.getElementById('chatNavBtn').classList.toggle('active', chatOpen);
-}
-</script>
 </body>
 </html>

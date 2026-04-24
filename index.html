@@ -275,16 +275,14 @@
     /* editor */
     .editor-label { font-size: 13px; font-weight: 600; color: var(--purple-dark); margin-bottom: 6px; display: block; }
     .editor-shell {
-      display: flex; border: 1.5px solid var(--gray-200); border-radius: 8px;
-      overflow: visible; transition: border-color .2s, box-shadow .2s; background: white;
-      position: relative;
+      display: flex; flex-direction: column; border: 1.5px solid var(--gray-200); border-radius: 8px;
+      overflow: hidden; transition: border-color .2s, box-shadow .2s; background: white;
     }
     .editor-shell:focus-within { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
 
     .editor-body {
       flex: 1; min-height: 320px; padding: 16px; outline: none;
       font-size: 14px; line-height: 1.8; color: var(--gray-900); overflow-y: auto;
-      border-radius: 8px 0 0 8px;
     }
     .editor-body:empty::before { content: attr(data-placeholder); color: var(--gray-400); pointer-events: none; }
     .editor-body h1 { font-size: 22px; color: var(--purple-dark); margin: 16px 0 8px; }
@@ -301,14 +299,13 @@
     .editor-body pre { background: var(--gray-900); color: #e5e7eb; padding: 14px; border-radius: 6px; margin-bottom: 10px; overflow-x: auto; }
     .editor-body pre code { background: none; padding: 0; color: inherit; }
 
-    /* right toolbar */
+    /* top toolbar */
     .editor-toolbar {
-      width: 52px; background: var(--gray-50); border-left: 1px solid var(--gray-200);
-      display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 2px; flex-shrink: 0;
-      position: sticky; top: 0; align-self: flex-start;
-      border-radius: 0 8px 8px 0;
+      background: var(--gray-50); border-bottom: 1px solid var(--gray-200);
+      display: flex; flex-direction: row; align-items: center; padding: 6px 10px; gap: 2px; flex-shrink: 0;
+      border-radius: 8px 8px 0 0; flex-wrap: wrap;
     }
-    .toolbar-sep { width: 28px; height: 1px; background: var(--gray-200); margin: 4px 0; }
+    .toolbar-sep { width: 1px; height: 22px; background: var(--gray-200); margin: 0 4px; }
     .toolbar-btn {
       width: 36px; height: 36px; background: none; border: none; border-radius: 6px;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -317,7 +314,7 @@
     .toolbar-btn:hover { background: var(--purple-light); color: var(--purple); }
     .toolbar-btn.active { background: var(--purple); color: white; }
     .toolbar-btn[title]:hover::after {
-      content: attr(title); position: absolute; right: 48px; top: 50%; transform: translateY(-50%);
+      content: attr(title); position: absolute; top: 38px; left: 50%; transform: translateX(-50%);
       background: var(--gray-900); color: white; font-size: 11px; font-weight: 400;
       padding: 4px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; z-index: 99;
     }
@@ -613,11 +610,7 @@
           <div class="form-row" style="margin-top:8px">
             <label class="editor-label">Conteúdo <span class="req">*</span></label>
             <div class="editor-shell">
-              <div class="editor-body" id="editorBody" contenteditable="true"
-                   data-placeholder="Escreva o conteúdo do artigo aqui..."
-                   onkeydown="editorKey(event)"></div>
-
-              <!-- RIGHT TOOLBAR -->
+              <!-- TOP TOOLBAR -->
               <div class="editor-toolbar">
                 <button class="toolbar-btn" title="Negrito" onclick="fmt('bold')"><b>B</b></button>
                 <button class="toolbar-btn" title="Itálico" onclick="fmt('italic')"><i>I</i></button>
@@ -708,6 +701,9 @@
                   </svg>
                 </button>
               </div>
+              <div class="editor-body" id="editorBody" contenteditable="true"
+                   data-placeholder="Escreva o conteúdo do artigo aqui..."
+                   onkeydown="editorKey(event)"></div>
             </div>
           </div>
         </div>

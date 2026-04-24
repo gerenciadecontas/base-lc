@@ -861,8 +861,9 @@
       </div>
     </div>
     <div id="ocrStatus" style="font-size:12px;color:var(--purple);margin-bottom:6px;display:none"></div>
-    <div id="autoWordsStatus" style="font-size:12px;margin-bottom:8px;padding:6px 10px;border-radius:6px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);display:none">
-      🔴 Palavras a circular automaticamente: <span id="autoWordsList" style="font-weight:700;color:var(--accent)"></span>
+    <div id="autoWordsStatus" style="font-size:12px;margin-bottom:8px;padding:6px 10px;border-radius:6px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);display:none;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <span>🔴 Palavras detectadas no passo: <span id="autoWordsList" style="font-weight:700;color:var(--accent)"></span></span>
+      <button onclick="applyAutoCircle()" style="background:var(--accent);border:none;color:#0B0B10;font-size:11px;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;white-space:nowrap;flex-shrink:0">🎯 Circular agora</button>
     </div>
     <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Clique em uma palavra na imagem para circular. Clique novamente para remover.</div>
     <div style="position:relative;border:2px solid #111;border-radius:6px;overflow:hidden;background:#f3f4f6;min-height:200px;cursor:crosshair" id="imgAnnotateWrap">
@@ -1773,19 +1774,45 @@ function _wordsMatch(ocrWord, stepWord) {
 
 /* Atualiza o painel de palavras detectadas no modal */
 function _updateAutoWordsPanel() {
-  if (!_currentImgBlock) return;
-  const words = _getBoldCapitalWordsFromStep(_currentImgBlock);
   const panel = document.getElementById('autoWordsStatus');
   const list  = document.getElementById('autoWordsList');
+  const statusEl = document.getElementById('ocrStatus');
+  if (!_currentImgBlock) {
+    list.textContent = '(bloco não encontrado)';
+    panel.style.display = 'flex';
+    return;
+  }
+  const words = _getBoldCapitalWordsFromStep(_currentImgBlock);
   if (words.size > 0) {
     list.textContent = [...words].join(', ');
-    panel.style.display = 'block';
   } else {
-    panel.style.display = 'none';
-    // debug: mostra se não achou nada
-    const statusEl = document.getElementById('ocrStatus');
-    if (statusEl) { statusEl.textContent = '⚠️ Nenhuma palavra em negrito+maiúscula encontrada no passo acima.'; statusEl.style.display = 'block'; }
+    // mostra o HTML bruto do h2 anterior para debug
+    let el = _currentImgBlock.previousElementSibling;
+    while (el && el.tagName !== 'H2') el = el.previousElementSibling;
+    const h2html = el ? el.innerHTML.substring(0, 80) : 'não encontrado';
+    list.textContent = `Nenhuma — h2: "${h2html}"`;
   }
+  panel.style.display = 'flex';
+}
+
+/* Aplica circulação manualmente após OCR */
+function applyAutoCircle() {
+  if (!_currentImgBlock) { toast('Bloco de imagem não encontrado.', 'error'); return; }
+  const autoWords = _getBoldCapitalWordsFromStep(_currentImgBlock);
+  if (autoWords.size === 0) { toast('Nenhuma palavra em negrito+maiúscula no passo acima.', 'error'); return; }
+  if (_ocrWords.length === 0) { toast('OCR ainda rodando ou não disponível.', 'error'); return; }
+  let count = 0;
+  _ocrWords.forEach(w => {
+    const ocrClean = w.text.replace(/[^a-zA-Z0-9À-ÿ]/g,'').toLowerCase();
+    if (ocrClean.length > 1 && [...autoWords].some(aw => _wordsMatch(ocrClean, aw))) {
+      if (!_annoRects.find(r => r.x===w.x && r.y===w.y)) {
+        _annoRects.push({...w});
+        count++;
+      }
+    }
+  });
+  redrawAnnotations();
+  toast(count > 0 ? `${count} palavra(s) circulada(s)!` : 'Palavras não encontradas na imagem pelo OCR.', count > 0 ? 'success' : 'warning');
 }
 
 function applyImgEdit() {

@@ -1683,6 +1683,27 @@ function imgEditPaste() {
   }).catch(() => toast('Permissão negada. Use Ctrl+V dentro do editor.', 'error'));
 }
 
+/* Extrai palavras com inicial maiúscula e em negrito do passo acima da imagem */
+function _getBoldCapitalWordsFromStep(fig) {
+  const words = new Set();
+  // sobe na árvore para achar o h2 e p do passo
+  let el = fig.previousElementSibling;
+  while (el) {
+    // coleta <b> e <strong> com inicial maiúscula
+    el.querySelectorAll('b, strong').forEach(b => {
+      b.textContent.trim().split(/\s+/).forEach(w => {
+        const clean = w.replace(/[^a-zA-ZÀ-ú]/g, '');
+        if (clean && clean[0] === clean[0].toUpperCase() && clean[0] !== clean[0].toLowerCase()) {
+          words.add(clean.toLowerCase());
+        }
+      });
+    });
+    if (el.tagName === 'H2') break;
+    el = el.previousElementSibling;
+  }
+  return words;
+}
+
 function applyImgEdit() {
   if (!_currentImgBlock) return;
   const caption = document.getElementById('imgEditCaption').value.trim();
@@ -1690,6 +1711,17 @@ function applyImgEdit() {
   const baseImg = document.getElementById('imgAnnotateBase');
 
   if (baseImg.src && baseImg.src !== window.location.href) {
+    // auto-anotar palavras bold+maiúscula do passo
+    const autoWords = _getBoldCapitalWordsFromStep(_currentImgBlock);
+    const autoRects = autoWords.size > 0
+      ? _ocrWords.filter(w => autoWords.has(w.text.replace(/[^a-zA-ZÀ-ú]/g,'').toLowerCase()))
+      : [];
+    // combina anotações manuais + automáticas (sem duplicar)
+    const allRects = [..._annoRects];
+    autoRects.forEach(ar => {
+      if (!allRects.find(r => r.x === ar.x && r.y === ar.y)) allRects.push(ar);
+    });
+
     const canvas = document.createElement('canvas');
     const img = new Image();
     img.onload = () => {
@@ -1701,7 +1733,7 @@ function applyImgEdit() {
       const scaleY = img.naturalHeight / document.getElementById('imgAnnotateCanvas').height;
       ctx.strokeStyle = '#EF4444';
       ctx.lineWidth = Math.max(3, 3 * scaleX);
-      _annoRects.forEach(r => ctx.strokeRect(r.x * scaleX, r.y * scaleY, r.w * scaleX, r.h * scaleY));
+      allRects.forEach(r => ctx.strokeRect(r.x * scaleX, r.y * scaleY, r.w * scaleX, r.h * scaleY));
       const finalSrc = canvas.toDataURL('image/png');
       setImgBlockContent(finalSrc, caption, note);
     };

@@ -865,7 +865,7 @@
       <span>🔴 Palavras detectadas no passo: <span id="autoWordsList" style="font-weight:700;color:var(--accent)"></span></span>
       <button onclick="applyAutoCircle()" style="background:var(--accent);border:none;color:#0B0B10;font-size:11px;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;white-space:nowrap;flex-shrink:0">🎯 Circular agora</button>
     </div>
-    <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Clique em uma palavra na imagem para circular. Clique novamente para remover.</div>
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Arraste para desenhar um retângulo sobre a palavra — o sistema encaixa automaticamente. Clique em um retângulo existente para remover.</div>
     <div style="position:relative;border:2px solid #111;border-radius:6px;overflow:hidden;background:#f3f4f6;min-height:200px;cursor:crosshair" id="imgAnnotateWrap">
       <img id="imgAnnotateBase" style="display:block;width:100%;user-select:none;pointer-events:none" />
       <canvas id="imgAnnotateCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
@@ -1559,23 +1559,55 @@ function initAnnotateCanvas() {
   canvas.onmousedown = null;
   canvas.onmousemove = null;
   canvas.onmouseup = null;
-  canvas.onclick = e => {
+  canvas.onclick = null;
+  canvas.style.cursor = 'crosshair';
+
+  let _drawing = false, _start = null, _preview = null;
+
+  canvas.onmousedown = e => {
     const r = canvas.getBoundingClientRect();
-    const cx = e.clientX - r.left, cy = e.clientY - r.top;
-    const hit = _ocrWords.find(w => cx >= w.x && cx <= w.x + w.w && cy >= w.y && cy <= w.y + w.h);
-    if (hit) {
-      const already = _annoRects.findIndex(r => r.x===hit.x && r.y===hit.y && r.w===hit.w && r.h===hit.h);
-      if (already >= 0) _annoRects.splice(already, 1);
-      else _annoRects.push({...hit});
-      redrawAnnotations();
-    }
+    _drawing = true;
+    _start = { x: e.clientX - r.left, y: e.clientY - r.top };
+    _preview = null;
   };
   canvas.onmousemove = e => {
     const r = canvas.getBoundingClientRect();
     const cx = e.clientX - r.left, cy = e.clientY - r.top;
-    const hit = _ocrWords.find(w => cx >= w.x && cx <= w.x + w.w && cy >= w.y && cy <= w.y + w.h);
-    canvas.style.cursor = hit ? 'pointer' : 'default';
-    redrawAnnotations(null, hit || null);
+    if (_drawing && _start) {
+      _preview = { x: Math.min(_start.x, cx), y: Math.min(_start.y, cy), w: Math.abs(cx - _start.x), h: Math.abs(cy - _start.y) };
+      redrawAnnotations(_preview);
+    } else {
+      redrawAnnotations();
+    }
+  };
+  canvas.onmouseup = e => {
+    if (!_drawing) return;
+    _drawing = false;
+    const r = canvas.getBoundingClientRect();
+    const cx = e.clientX - r.left, cy = e.clientY - r.top;
+    const drawn = { x: Math.min(_start.x, cx), y: Math.min(_start.y, cy), w: Math.abs(cx - _start.x), h: Math.abs(cy - _start.y) };
+    _preview = null;
+
+    if (drawn.w < 4 && drawn.h < 4) {
+      // clique simples: toggle palavra OCR sob o cursor
+      const hit = _ocrWords.find(w => cx >= w.x && cx <= w.x + w.w && cy >= w.y && cy <= w.y + w.h);
+      if (hit) {
+        const idx = _annoRects.findIndex(ar => ar.x === hit.x && ar.y === hit.y);
+        if (idx >= 0) _annoRects.splice(idx, 1); else _annoRects.push({...hit});
+      }
+    } else {
+      // retângulo desenhado: encaixa na palavra OCR mais sobreposta, ou usa o retângulo exato
+      const overlap = w => {
+        const ox = Math.max(drawn.x, w.x), oy = Math.max(drawn.y, w.y);
+        const ex = Math.min(drawn.x + drawn.w, w.x + w.w), ey = Math.min(drawn.y + drawn.h, w.y + w.h);
+        return Math.max(0, ex - ox) * Math.max(0, ey - oy);
+      };
+      const best = _ocrWords.reduce((a, b) => overlap(b) > overlap(a) ? b : a, { x:0, y:0, w:0, h:0, text:'', _score: 0 });
+      const rect = overlap(best) > 10 ? {...best} : drawn;
+      const idx = _annoRects.findIndex(ar => ar.x === rect.x && ar.y === rect.y);
+      if (idx >= 0) _annoRects.splice(idx, 1); else _annoRects.push(rect);
+    }
+    redrawAnnotations();
   };
   runOCR();
 }
@@ -1590,31 +1622,31 @@ function runOCR() {
     const scaleX = canvas.width / img.naturalWidth;
     const scaleY = canvas.height / img.naturalHeight;
     const pad = 3;
-    _ocrWords = data.words.filter(w => w.confidence > 20).map(w => ({
+    _ocrWords = data.words.map(w => ({
       x: w.bbox.x0 * scaleX - pad, y: w.bbox.y0 * scaleY - pad,
       w: (w.bbox.x1 - w.bbox.x0) * scaleX + pad * 2,
       h: (w.bbox.y1 - w.bbox.y0) * scaleY + pad * 2,
-      text: w.text
+      text: w.text, confidence: w.confidence
     }));
-    if (statusEl) { statusEl.textContent = `✅ ${_ocrWords.length} palavras detectadas — clique para circular`; }
+    if (statusEl) { statusEl.textContent = `✅ ${_ocrWords.length} palavras detectadas — desenhe sobre a palavra para circular`; }
     // auto-marca palavras bold+maiúscula do passo
     if (_currentImgBlock) {
       const autoWords = _getBoldCapitalWordsFromStep(_currentImgBlock);
-      let autoCount = 0;
       if (autoWords.size > 0) {
+        const foundWords = [];
         _ocrWords.forEach(w => {
           const ocrClean = w.text.replace(/[^a-zA-Z0-9À-ÿ]/g,'').toLowerCase();
           const matched = ocrClean.length > 1 && [...autoWords].some(aw => _wordsMatch(ocrClean, aw));
           if (matched && !_annoRects.find(r => r.x===w.x && r.y===w.y)) {
             _annoRects.push({...w});
-            autoCount++;
+            foundWords.push(ocrClean);
           }
         });
         const wordList = [...autoWords].join(', ');
         if (statusEl) {
-          statusEl.textContent = autoCount > 0
-            ? `✅ ${_ocrWords.length} detectadas — circulou automaticamente: ${wordList}`
-            : `✅ ${_ocrWords.length} detectadas — buscando: [${wordList}] — não encontradas na imagem`;
+          statusEl.textContent = foundWords.length > 0
+            ? `✅ ${_ocrWords.length} detectadas — circulou: ${foundWords.join(', ')}`
+            : `✅ ${_ocrWords.length} detectadas — buscando [${wordList}] — desenhe manualmente`;
           statusEl.style.display = 'block';
         }
       }

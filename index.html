@@ -266,7 +266,7 @@
     .admin-nav {
       width: 220px; background: var(--surface-0); border-right: 1px solid var(--border-1);
       flex-shrink: 0; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px;
-      height: calc(100vh - 56px); overflow-y: auto;
+      height: calc(100vh - 56px); overflow: visible; position: relative;
     }
     .admin-nav-title { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .1em; padding: 8px 10px 4px; }
     .admin-nav-btn {
@@ -563,20 +563,27 @@
 
     /* Painel que desliza para fora do sidebar */
     .flyout-panel {
-      position: fixed;
-      top: 56px;
-      left: 220px;
-      bottom: 0;
-      width: 280px;
-      background: var(--surface-0); /* mesma cor do sidebar */
+      position: absolute;
+      top: 0;
+      left: 100%;
+      height: 100%;
+      width: 260px;
+      background: var(--surface-0);
       border-right: 1px solid var(--border-1);
+      border-left: 1px solid var(--border-1);
       z-index: 490;
       display: flex;
       flex-direction: column;
-      transform: translateX(-100%);
-      transition: transform .22s cubic-bezier(.4,0,.2,1);
+      transform: translateX(-110%);
+      pointer-events: none;
+      opacity: 0;
+      transition: transform .22s cubic-bezier(.4,0,.2,1), opacity .18s ease;
     }
-    .flyout-panel.open { transform: translateX(0); }
+    .flyout-panel.open {
+      transform: translateX(0);
+      pointer-events: auto;
+      opacity: 1;
+    }
 
     .flyout-header {
       display: flex; align-items: center; justify-content: space-between;
@@ -731,6 +738,62 @@
       </svg>
       Chat
     </button>
+
+    <!-- Painel flyout ancorado no admin-nav -->
+    <div class="flyout-panel" id="flyoutPanel">
+      <div class="flyout-header">
+        <span class="flyout-header-title">Equipe Online</span>
+        <button class="flyout-close" onclick="toggleChat()" title="Fechar">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="flyout-body">
+        <div class="flyout-section-label">Online agora</div>
+        <div class="flyout-item">
+          <div class="flyout-avatar" style="background:rgba(167,139,250,.2);color:var(--accent)">SA</div>
+          <div class="flyout-item-info">
+            <div class="flyout-item-name">Sayali Santos</div>
+            <div class="flyout-item-sub">Disponível</div>
+          </div>
+          <div class="flyout-dot"></div>
+        </div>
+        <div class="flyout-item">
+          <div class="flyout-avatar" style="background:rgba(34,211,238,.2);color:var(--accent-2)">RA</div>
+          <div class="flyout-item-info">
+            <div class="flyout-item-name">Rohit Agarw.</div>
+            <div class="flyout-item-sub">Disponível</div>
+          </div>
+          <div class="flyout-dot"></div>
+        </div>
+        <div class="flyout-item">
+          <div class="flyout-avatar" style="background:rgba(74,222,128,.2);color:var(--ok)">JA</div>
+          <div class="flyout-item-info">
+            <div class="flyout-item-name">John Alex</div>
+            <div class="flyout-item-sub">Ausente</div>
+          </div>
+          <div class="flyout-dot away"></div>
+        </div>
+        <div class="flyout-item">
+          <div class="flyout-avatar" style="background:rgba(251,191,36,.2);color:var(--warn)">RD</div>
+          <div class="flyout-item-info">
+            <div class="flyout-item-name">Rosy Done</div>
+            <div class="flyout-item-sub">Offline</div>
+          </div>
+          <div class="flyout-dot off"></div>
+        </div>
+        <div class="flyout-section-label" style="margin-top:8px">Grupos (6)</div>
+        <div class="flyout-item">
+          <div class="flyout-avatar" style="font-size:11px">🎨</div>
+          <div class="flyout-item-info"><div class="flyout-item-name">UI/UX Designing</div></div>
+        </div>
+        <div class="flyout-item">
+          <div class="flyout-avatar" style="font-size:11px">💻</div>
+          <div class="flyout-item-info"><div class="flyout-item-name">Web Development</div></div>
+        </div>
+      </div>
+    </div>
   </nav>
 
   <!-- admin center -->
@@ -2095,76 +2158,6 @@ function toast(msg, type='success') {
 pubInit();
 </script>
 
-<!-- ══════════════════════════════════════
-     CHAT FLYOUT
-══════════════════════════════════════ -->
-
-<!-- Painel flyout (desliza para fora do sidebar esquerdo) -->
-<div class="flyout-panel" id="flyoutPanel">
-  <div class="flyout-header">
-    <span class="flyout-header-title">Equipe Online</span>
-    <button class="flyout-close" onclick="toggleChat()" title="Fechar">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    </button>
-  </div>
-
-  <div class="flyout-body">
-    <div class="flyout-section-label">Online agora</div>
-
-    <div class="flyout-item">
-      <div class="flyout-avatar" style="background:rgba(167,139,250,.2);color:var(--accent)">SA</div>
-      <div class="flyout-item-info">
-        <div class="flyout-item-name">Sayali Santos</div>
-        <div class="flyout-item-sub">Lorem ipsum</div>
-      </div>
-      <div class="flyout-dot"></div>
-    </div>
-
-    <div class="flyout-item">
-      <div class="flyout-avatar" style="background:rgba(34,211,238,.2);color:var(--accent-2)">RA</div>
-      <div class="flyout-item-info">
-        <div class="flyout-item-name">Rohit Agarw.</div>
-        <div class="flyout-item-sub">Lorem ipsum</div>
-      </div>
-      <div class="flyout-dot"></div>
-    </div>
-
-    <div class="flyout-item">
-      <div class="flyout-avatar" style="background:rgba(74,222,128,.2);color:var(--ok)">JA</div>
-      <div class="flyout-item-info">
-        <div class="flyout-item-name">John Alex</div>
-        <div class="flyout-item-sub">Lorem ipsum</div>
-      </div>
-      <div class="flyout-dot away"></div>
-    </div>
-
-    <div class="flyout-item">
-      <div class="flyout-avatar" style="background:rgba(251,191,36,.2);color:var(--warn)">RD</div>
-      <div class="flyout-item-info">
-        <div class="flyout-item-name">Rosy Done</div>
-        <div class="flyout-item-sub">Lorem ipsum</div>
-      </div>
-      <div class="flyout-dot off"></div>
-    </div>
-
-    <div class="flyout-section-label" style="margin-top:8px">Grupos (6)</div>
-
-    <div class="flyout-item">
-      <div class="flyout-avatar" style="font-size:10px">🎨</div>
-      <div class="flyout-item-info">
-        <div class="flyout-item-name">UI/UX Designing</div>
-      </div>
-    </div>
-    <div class="flyout-item">
-      <div class="flyout-avatar" style="font-size:10px">💻</div>
-      <div class="flyout-item-info">
-        <div class="flyout-item-name">Web Development</div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <script>
 /* ══════════════════════════════════════

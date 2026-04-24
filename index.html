@@ -343,6 +343,7 @@
     .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
     .status-published { background: #D1FAE5; color: #065F46; }
     .status-draft { background: var(--yellow-light); color: var(--yellow-dark); }
+    .status-inactive { background: #F3F4F6; color: #6B7280; }
 
     .action-btns { display: flex; gap: 6px; }
     .btn-sm { padding: 5px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; }
@@ -604,6 +605,7 @@
             <select class="form-select" id="fieldStatus">
               <option value="draft">Rascunho</option>
               <option value="published">Publicado</option>
+              <option value="inactive">Inativo</option>
             </select>
           </div>
 
@@ -703,7 +705,8 @@
               </div>
               <div class="editor-body" id="editorBody" contenteditable="true"
                    data-placeholder="Escreva o conteúdo do artigo aqui..."
-                   onkeydown="editorKey(event)"></div>
+                   onkeydown="editorKey(event)"
+                   onpaste="editorPaste(event)"></div>
             </div>
           </div>
         </div>
@@ -1195,7 +1198,7 @@ function renderArticlesList() {
         ${a.description ? `<div style="font-size:12px;color:var(--gray-400);margin-top:2px">${a.description}</div>` : ''}
       </td>
       <td><span style="color:var(--purple);font-weight:500;font-size:12px">${cat?cat.name:'—'}</span></td>
-      <td><span class="status-badge ${a.status==='published'?'status-published':'status-draft'}">${a.status==='published'?'● Publicado':'○ Rascunho'}</span></td>
+      <td><span class="status-badge ${a.status==='published'?'status-published':a.status==='inactive'?'status-inactive':'status-draft'}">${a.status==='published'?'● Publicado':a.status==='inactive'?'◌ Inativo':'○ Rascunho'}</span></td>
       <td>${(a.views||0).toLocaleString('pt-BR')}</td>
       <td>${a.date||'—'}</td>
       <td><div class="action-btns">
@@ -1362,7 +1365,42 @@ function renderComments() {
 function fmt(cmd, val)  { document.getElementById('editorBody').focus(); document.execCommand(cmd, false, val||null); }
 function fmtBlock(tag)  { document.getElementById('editorBody').focus(); document.execCommand('formatBlock', false, tag); }
 function insertLink()   { const u=prompt('URL do link:'); if(u){ document.getElementById('editorBody').focus(); document.execCommand('createLink',false,u); } }
-function insertImage()  { const u=prompt('URL da imagem:'); if(u){ document.getElementById('editorBody').focus(); document.execCommand('insertImage',false,u); setTimeout(()=>{document.querySelectorAll('#editorBody img').forEach(i=>{i.style.maxWidth='100%';i.style.borderRadius='6px';});},50); } }
+function insertImage() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => insertImageBase64(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function insertImageBase64(src) {
+  const editor = document.getElementById('editorBody');
+  editor.focus();
+  const img = document.createElement('img');
+  img.src = src;
+  img.style.maxWidth = '100%';
+  img.style.borderRadius = '6px';
+  img.style.margin = '8px 0';
+  img.style.display = 'block';
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(img);
+    range.setStartAfter(img);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } else {
+    editor.appendChild(img);
+  }
+}
 function insertCode()   { document.getElementById('editorBody').focus(); document.execCommand('insertHTML',false,'<pre><code>// código aqui</code></pre><p><br></p>'); }
 function insertTable()  {
   const r=parseInt(prompt('Linhas:','3')||'3'), c=parseInt(prompt('Colunas:','3')||'3');
@@ -1373,6 +1411,21 @@ function insertTable()  {
   document.getElementById('editorBody').focus(); document.execCommand('insertHTML',false,h);
 }
 function editorKey(e) { if(e.ctrlKey && e.key==='s'){ e.preventDefault(); saveArticle(); } }
+
+function editorPaste(e) {
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      const file = item.getAsFile();
+      const reader = new FileReader();
+      reader.onload = ev => insertImageBase64(ev.target.result);
+      reader.readAsDataURL(file);
+      return;
+    }
+  }
+}
 
 /* ══════════════════════════════════════
    CONFIRM MODAL

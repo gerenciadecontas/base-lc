@@ -413,6 +413,15 @@
     .modal-error { background: #FEE2E2; color: var(--red); font-size: 13px; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: none; border: 1px solid #FECACA; }
     .modal-error.show { display: block; }
 
+    .template-card {
+      border: 1.5px solid var(--gray-200); border-radius: 10px; padding: 18px;
+      cursor: pointer; transition: all .2s; background: white;
+    }
+    .template-card:hover { border-color: var(--purple); box-shadow: 0 4px 16px rgba(124,58,237,.12); transform: translateY(-2px); }
+    .template-icon { font-size: 24px; margin-bottom: 8px; }
+    .template-name { font-size: 14px; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
+    .template-desc { font-size: 12px; color: var(--gray-400); }
+
     .btn-login-submit {
       width: 100%; padding: 12px; background: var(--purple); color: white; border: none;
       border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s;
@@ -580,7 +589,13 @@
 
         <!-- edit panel -->
         <div class="tab-panel" id="panelEdit">
-          <div class="form-section-title">Informações do Artigo</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div class="form-section-title" style="margin-bottom:0">Informações do Artigo</div>
+            <button class="btn btn-secondary" onclick="openTemplateModal()" style="font-size:12px;padding:6px 14px">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              Usar Template
+            </button>
+          </div>
 
           <div class="form-row">
             <label>Nome <span class="req">*</span></label>
@@ -714,6 +729,10 @@
 
       <!-- form actions -->
       <div class="form-actions" id="editActions" style="display:none">
+        <span id="autosaveLabel" style="font-size:12px;color:var(--gray-400);display:none">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><path d="M20 6L9 17l-5-5"/></svg>
+          Rascunho salvo automaticamente
+        </span>
         <button class="btn btn-danger" onclick="confirmDeleteArticle()" id="btnDeleteArt">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2 2 0 01-2 2H8a2 2 0 01-2-2L5,6"/>
@@ -760,6 +779,48 @@
 <!-- ══════════════════════════════════════
      LOGIN MODAL
 ══════════════════════════════════════ -->
+<!-- TEMPLATE MODAL -->
+<div class="overlay hidden" id="templateOverlay" onclick="if(event.target===this)closeTemplateModal()">
+  <div class="modal-box" style="max-width:640px;padding:0;overflow:hidden">
+    <div class="modal-header" style="padding:20px 24px">
+      <h2 style="font-size:16px;font-weight:700">Escolha um Template</h2>
+      <button onclick="closeTemplateModal()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <div style="padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="template-card" onclick="applyTemplate('passo-a-passo')">
+        <div class="template-icon">📋</div>
+        <div class="template-name">Passo a Passo</div>
+        <div class="template-desc">Guia sequencial com etapas numeradas</div>
+      </div>
+      <div class="template-card" onclick="applyTemplate('tutorial-imagens')">
+        <div class="template-icon">🖼️</div>
+        <div class="template-name">Tutorial com Imagens</div>
+        <div class="template-desc">Estrutura para tutoriais visuais com prints</div>
+      </div>
+      <div class="template-card" onclick="applyTemplate('faq')">
+        <div class="template-icon">❓</div>
+        <div class="template-name">FAQ</div>
+        <div class="template-desc">Perguntas e respostas frequentes</div>
+      </div>
+      <div class="template-card" onclick="applyTemplate('aviso')">
+        <div class="template-icon">⚠️</div>
+        <div class="template-name">Aviso / Comunicado</div>
+        <div class="template-desc">Comunicados importantes para os usuários</div>
+      </div>
+      <div class="template-card" onclick="applyTemplate('referencia')">
+        <div class="template-icon">📖</div>
+        <div class="template-name">Referência Técnica</div>
+        <div class="template-desc">Documentação técnica com tabelas e códigos</div>
+      </div>
+      <div class="template-card" onclick="applyTemplate('novidade')">
+        <div class="template-icon">🚀</div>
+        <div class="template-name">Novidade / Atualização</div>
+        <div class="template-desc">Anúncio de nova funcionalidade ou versão</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="overlay hidden" id="loginOverlay">
   <div class="modal-box">
     <div class="modal-header">
@@ -1236,6 +1297,8 @@ function newArticle() {
   document.getElementById('btnDeleteArt').style.display = 'none';
   switchTab('edit');
   adminSection('articles');
+  restoreAutosave();
+  startAutosave();
 }
 
 function editArticle(id) {
@@ -1251,6 +1314,7 @@ function editArticle(id) {
   document.getElementById('btnDeleteArt').style.display = 'inline-flex';
   switchTab('edit');
   adminSection('articles');
+  startAutosave();
 }
 
 function clearForm() {
@@ -1260,7 +1324,7 @@ function clearForm() {
   populateCatDropdown();
 }
 
-function cancelEdit() { clearForm(); adminState.editingId=null; switchTab('list'); renderArticlesList(); }
+function cancelEdit() { stopAutosave(); clearForm(); adminState.editingId=null; switchTab('list'); renderArticlesList(); }
 
 function saveArticle() {
   const title      = document.getElementById('fieldTitle').value.trim();
@@ -1284,9 +1348,102 @@ function saveArticle() {
   }
   setArticles(arts);
   refreshBadges();
+  stopAutosave();
   switchTab('list');
   renderArticlesList();
   adminState.editingId = null;
+}
+
+// ── TEMPLATES ──
+const TEMPLATES = {
+  'passo-a-passo': {
+    title: 'Como fazer [título aqui]',
+    content: `<h1>Como fazer [título aqui]</h1><p>Breve introdução explicando o que será feito e o resultado esperado.</p><h2>Pré-requisitos</h2><ul><li>Item necessário 1</li><li>Item necessário 2</li></ul><h2>Passo 1 — [Nome do passo]</h2><p>Descrição do que deve ser feito neste passo.</p><h2>Passo 2 — [Nome do passo]</h2><p>Descrição do que deve ser feito neste passo.</p><h2>Passo 3 — [Nome do passo]</h2><p>Descrição do que deve ser feito neste passo.</p><h2>Conclusão</h2><p>Resultado esperado após seguir todos os passos.</p>`
+  },
+  'tutorial-imagens': {
+    title: 'Tutorial: [título aqui]',
+    content: `<h1>Tutorial: [título aqui]</h1><p>Introdução breve sobre o que este tutorial ensina.</p><h2>1. [Etapa inicial]</h2><p>Descreva a etapa aqui.</p><p><em>[Insira uma imagem aqui — use o botão 🖼️ na toolbar ou Ctrl+V para colar uma print]</em></p><h2>2. [Próxima etapa]</h2><p>Descreva a etapa aqui.</p><p><em>[Insira uma imagem aqui]</em></p><h2>3. [Etapa final]</h2><p>Descreva a etapa aqui.</p><p><em>[Insira uma imagem aqui]</em></p><h2>Resultado</h2><p>Descreva o resultado esperado.</p>`
+  },
+  'faq': {
+    title: 'Perguntas Frequentes — [tema]',
+    content: `<h1>Perguntas Frequentes — [tema]</h1><p>Respostas para as dúvidas mais comuns sobre [tema].</p><h2>Pergunta 1?</h2><p>Resposta para a pergunta 1.</p><h2>Pergunta 2?</h2><p>Resposta para a pergunta 2.</p><h2>Pergunta 3?</h2><p>Resposta para a pergunta 3.</p><h2>Pergunta 4?</h2><p>Resposta para a pergunta 4.</p><h2>Ainda tem dúvidas?</h2><p>Entre em contato com o suporte.</p>`
+  },
+  'aviso': {
+    title: 'Aviso: [assunto]',
+    content: `<h1>Aviso: [assunto]</h1><blockquote>⚠️ Leia com atenção antes de continuar.</blockquote><h2>O que aconteceu</h2><p>Descreva o contexto do aviso.</p><h2>O que você deve fazer</h2><ul><li>Ação 1</li><li>Ação 2</li><li>Ação 3</li></ul><h2>Prazo</h2><p>Informe o prazo ou urgência, se houver.</p><h2>Dúvidas</h2><p>Em caso de dúvidas, entre em contato com [contato].</p>`
+  },
+  'referencia': {
+    title: 'Referência: [tema técnico]',
+    content: `<h1>Referência: [tema técnico]</h1><p>Documentação de referência sobre [tema].</p><h2>Visão Geral</h2><p>Descrição geral do recurso ou funcionalidade.</p><h2>Parâmetros / Campos</h2><table><tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr><tr><td>campo1</td><td>Texto</td><td>Descrição do campo</td></tr><tr><td>campo2</td><td>Número</td><td>Descrição do campo</td></tr></table><h2>Exemplo de uso</h2><pre><code>Exemplo de código ou configuração aqui</code></pre><h2>Observações</h2><p>Informações adicionais importantes.</p>`
+  },
+  'novidade': {
+    title: 'Novidade: [nome da funcionalidade]',
+    content: `<h1>🚀 Novidade: [nome da funcionalidade]</h1><p>Estamos lançando [nome da funcionalidade] para tornar sua experiência ainda melhor.</p><h2>O que há de novo</h2><ul><li>Melhoria 1</li><li>Melhoria 2</li><li>Melhoria 3</li></ul><h2>Como usar</h2><p>Descreva como o usuário pode usar a nova funcionalidade.</p><p><em>[Insira uma imagem mostrando a novidade]</em></p><h2>Disponibilidade</h2><p>Informe quando e para quem está disponível.</p>`
+  }
+};
+
+function openTemplateModal() {
+  document.getElementById('templateOverlay').classList.remove('hidden');
+}
+
+function closeTemplateModal() {
+  document.getElementById('templateOverlay').classList.add('hidden');
+}
+
+function applyTemplate(key) {
+  const tpl = TEMPLATES[key];
+  if (!tpl) return;
+  const titleField = document.getElementById('fieldTitle');
+  const editor = document.getElementById('editorBody');
+  if (titleField.value.trim() || editor.innerHTML.trim()) {
+    if (!confirm('Isso vai substituir o conteúdo atual. Deseja continuar?')) return;
+  }
+  titleField.value = tpl.title;
+  editor.innerHTML = tpl.content;
+  closeTemplateModal();
+  toast('Template aplicado! Edite os campos marcados com [ ].', 'success');
+}
+
+const AUTOSAVE_KEY = 'lc_autosave';
+let autosaveTimer = null;
+
+function startAutosave() {
+  stopAutosave();
+  autosaveTimer = setInterval(() => {
+    const draft = {
+      id: adminState.editingId,
+      title: document.getElementById('fieldTitle').value,
+      description: document.getElementById('fieldDescription').value,
+      categoryId: document.getElementById('fieldCategory').value,
+      order: document.getElementById('fieldOrder').value,
+      status: document.getElementById('fieldStatus').value,
+      content: document.getElementById('editorBody').innerHTML,
+    };
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(draft));
+    const lbl = document.getElementById('autosaveLabel');
+    if (lbl) { lbl.style.display = 'inline'; setTimeout(() => { lbl.style.display = 'none'; }, 3000); }
+  }, 30000);
+}
+
+function stopAutosave() {
+  if (autosaveTimer) { clearInterval(autosaveTimer); autosaveTimer = null; }
+  localStorage.removeItem(AUTOSAVE_KEY);
+}
+
+function restoreAutosave() {
+  const saved = localStorage.getItem(AUTOSAVE_KEY);
+  if (!saved) return;
+  try {
+    const d = JSON.parse(saved);
+    if (!confirm('Existe um rascunho salvo automaticamente. Deseja restaurá-lo?')) { localStorage.removeItem(AUTOSAVE_KEY); return; }
+    document.getElementById('fieldTitle').value = d.title || '';
+    document.getElementById('fieldDescription').value = d.description || '';
+    document.getElementById('fieldCategory').value = d.categoryId || '';
+    document.getElementById('fieldOrder').value = d.order || '';
+    document.getElementById('fieldStatus').value = d.status || 'draft';
+    document.getElementById('editorBody').innerHTML = d.content || '';
+    adminState.editingId = d.id || null;
+  } catch(e) { localStorage.removeItem(AUTOSAVE_KEY); }
 }
 
 function deleteArticle(id) {

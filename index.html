@@ -281,7 +281,7 @@
     .editor-shell:focus-within { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
 
     .editor-body {
-      flex: 1; min-height: 320px; padding: 16px; outline: none;
+      flex: 1; min-height: 320px; max-height: 520px; padding: 16px; outline: none;
       font-size: 14px; line-height: 1.8; color: var(--gray-900); overflow-y: auto;
     }
     .editor-body:empty::before { content: attr(data-placeholder); color: var(--gray-400); pointer-events: none; }

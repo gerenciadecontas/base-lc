@@ -860,7 +860,10 @@
         <button class="btn btn-secondary" style="font-size:12px;color:var(--red)" onclick="clearAnnotations()">🗑️ Limpar marcações</button>
       </div>
     </div>
-    <div id="ocrStatus" style="font-size:12px;color:var(--purple);margin-bottom:10px;display:none"></div>
+    <div id="ocrStatus" style="font-size:12px;color:var(--purple);margin-bottom:6px;display:none"></div>
+    <div id="autoWordsStatus" style="font-size:12px;margin-bottom:8px;padding:6px 10px;border-radius:6px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);display:none">
+      🔴 Palavras a circular automaticamente: <span id="autoWordsList" style="font-weight:700;color:var(--accent)"></span>
+    </div>
     <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px">Clique em uma palavra na imagem para circular. Clique novamente para remover.</div>
     <div style="position:relative;border:2px solid #111;border-radius:6px;overflow:hidden;background:#f3f4f6;min-height:200px;cursor:crosshair" id="imgAnnotateWrap">
       <img id="imgAnnotateBase" style="display:block;width:100%;user-select:none;pointer-events:none" />
@@ -1525,6 +1528,7 @@ function editImgBlock(fig) {
   }
   document.getElementById('imgEditModal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  _updateAutoWordsPanel();
 }
 
 function removeImgFromBlock() {
@@ -1591,6 +1595,21 @@ function runOCR() {
       text: w.text
     }));
     if (statusEl) { statusEl.textContent = `✅ ${_ocrWords.length} palavras detectadas — clique para circular`; }
+    // auto-marca palavras bold+maiúscula do passo
+    if (_currentImgBlock) {
+      const autoWords = _getBoldCapitalWordsFromStep(_currentImgBlock);
+      if (autoWords.size > 0) {
+        _ocrWords.forEach(w => {
+          const clean = w.text.replace(/[^a-zA-ZÀ-ú]/g,'').toLowerCase();
+          if (autoWords.has(clean) && !_annoRects.find(r => r.x===w.x && r.y===w.y)) {
+            _annoRects.push({...w});
+          }
+        });
+        if (_annoRects.length > 0 && statusEl) {
+          statusEl.textContent += ` — ${_annoRects.length} palavra(s) circulada(s) automaticamente`;
+        }
+      }
+    }
     redrawAnnotations();
   }).catch(() => {
     if (statusEl) statusEl.textContent = '⚠️ OCR não disponível — arraste para marcar manualmente';
@@ -1702,25 +1721,38 @@ function imgEditPaste() {
   }).catch(() => toast('Permissão negada. Use Ctrl+V dentro do editor.', 'error'));
 }
 
-/* Extrai palavras com inicial maiúscula e em negrito do passo acima da imagem */
+/* Extrai palavras em negrito com inicial maiúscula dos elementos acima da figura */
 function _getBoldCapitalWordsFromStep(fig) {
   const words = new Set();
-  // sobe na árvore para achar o h2 e p do passo
+  // percorre todos os irmãos anteriores até encontrar outra figure ou o início
   let el = fig.previousElementSibling;
-  while (el) {
-    // coleta <b> e <strong> com inicial maiúscula
+  while (el && el.tagName !== 'FIGURE') {
+    // busca <b> e <strong> dentro do elemento
     el.querySelectorAll('b, strong').forEach(b => {
-      b.textContent.trim().split(/\s+/).forEach(w => {
-        const clean = w.replace(/[^a-zA-ZÀ-ú]/g, '');
-        if (clean && clean[0] === clean[0].toUpperCase() && clean[0] !== clean[0].toLowerCase()) {
+      b.textContent.trim().split(/\s+/).forEach(token => {
+        const clean = token.replace(/[^a-zA-ZÀ-úA-Z]/g, '');
+        if (clean.length > 1 && /^[A-ZÁÉÍÓÚÀÂÊÔÃÕÇ]/.test(clean)) {
           words.add(clean.toLowerCase());
         }
       });
     });
-    if (el.tagName === 'H2') break;
     el = el.previousElementSibling;
   }
   return words;
+}
+
+/* Atualiza o painel de palavras detectadas no modal */
+function _updateAutoWordsPanel() {
+  if (!_currentImgBlock) return;
+  const words = _getBoldCapitalWordsFromStep(_currentImgBlock);
+  const panel = document.getElementById('autoWordsStatus');
+  const list  = document.getElementById('autoWordsList');
+  if (words.size > 0) {
+    list.textContent = [...words].join(', ');
+    panel.style.display = 'block';
+  } else {
+    panel.style.display = 'none';
+  }
 }
 
 function applyImgEdit() {
@@ -1730,17 +1762,6 @@ function applyImgEdit() {
   const baseImg = document.getElementById('imgAnnotateBase');
 
   if (baseImg.src && baseImg.src !== window.location.href) {
-    // auto-anotar palavras bold+maiúscula do passo
-    const autoWords = _getBoldCapitalWordsFromStep(_currentImgBlock);
-    const autoRects = autoWords.size > 0
-      ? _ocrWords.filter(w => autoWords.has(w.text.replace(/[^a-zA-ZÀ-ú]/g,'').toLowerCase()))
-      : [];
-    // combina anotações manuais + automáticas (sem duplicar)
-    const allRects = [..._annoRects];
-    autoRects.forEach(ar => {
-      if (!allRects.find(r => r.x === ar.x && r.y === ar.y)) allRects.push(ar);
-    });
-
     const canvas = document.createElement('canvas');
     const img = new Image();
     img.onload = () => {
@@ -1752,7 +1773,7 @@ function applyImgEdit() {
       const scaleY = img.naturalHeight / document.getElementById('imgAnnotateCanvas').height;
       ctx.strokeStyle = '#EF4444';
       ctx.lineWidth = Math.max(3, 3 * scaleX);
-      allRects.forEach(r => ctx.strokeRect(r.x * scaleX, r.y * scaleY, r.w * scaleX, r.h * scaleY));
+      _annoRects.forEach(r => ctx.strokeRect(r.x * scaleX, r.y * scaleY, r.w * scaleX, r.h * scaleY));
       const finalSrc = canvas.toDataURL('image/png');
       setImgBlockContent(finalSrc, caption, note);
     };

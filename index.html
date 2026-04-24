@@ -1596,16 +1596,21 @@ function initAnnotateCanvas() {
         if (idx >= 0) _annoRects.splice(idx, 1); else _annoRects.push({...hit});
       }
     } else {
-      // retângulo desenhado: encaixa na palavra OCR mais sobreposta, ou usa o retângulo exato
-      const overlap = w => {
-        const ox = Math.max(drawn.x, w.x), oy = Math.max(drawn.y, w.y);
-        const ex = Math.min(drawn.x + drawn.w, w.x + w.w), ey = Math.min(drawn.y + drawn.h, w.y + w.h);
-        return Math.max(0, ex - ox) * Math.max(0, ey - oy);
-      };
-      const best = _ocrWords.reduce((a, b) => overlap(b) > overlap(a) ? b : a, { x:0, y:0, w:0, h:0, text:'', _score: 0 });
-      const rect = overlap(best) > 10 ? {...best} : drawn;
-      const idx = _annoRects.findIndex(ar => ar.x === rect.x && ar.y === rect.y);
-      if (idx >= 0) _annoRects.splice(idx, 1); else _annoRects.push(rect);
+      // retângulo desenhado: encontra palavras OCR cujo centro está dentro da área desenhada
+      const matches = _ocrWords.filter(w => {
+        const wcx = w.x + w.w / 2, wcy = w.y + w.h / 2;
+        return wcx >= drawn.x && wcx <= drawn.x + drawn.w && wcy >= drawn.y && wcy <= drawn.y + drawn.h;
+      });
+      if (matches.length > 0) {
+        // encaixa em cada palavra encontrada dentro da área
+        matches.forEach(w => {
+          const idx = _annoRects.findIndex(ar => ar.x === w.x && ar.y === w.y);
+          if (idx >= 0) _annoRects.splice(idx, 1); else _annoRects.push({...w});
+        });
+      } else {
+        // nenhuma palavra OCR dentro: usa o retângulo exato desenhado
+        _annoRects.push(drawn);
+      }
     }
     redrawAnnotations();
   };

@@ -413,6 +413,40 @@
     .modal-error { background: #FEE2E2; color: var(--red); font-size: 13px; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: none; border: 1px solid #FECACA; }
     .modal-error.show { display: block; }
 
+    /* image block */
+    .img-block {
+      border: 2px solid #111; border-radius: 8px; overflow: hidden;
+      margin: 16px 0; cursor: pointer; transition: box-shadow .2s;
+    }
+    .img-block:hover { box-shadow: 0 0 0 3px rgba(124,58,237,.3); }
+    .img-block img { width: 100%; display: block; border-bottom: 2px solid #111; }
+    .img-placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 10px; padding: 40px; background: var(--gray-100); color: var(--gray-400);
+      font-size: 13px; border-bottom: 2px solid #111;
+    }
+    .img-caption {
+      padding: 8px 12px; font-size: 13px; color: var(--gray-500);
+      background: #f9f9f9; font-style: italic; min-height: 32px;
+    }
+    /* img edit modal */
+    .img-edit-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .img-edit-box {
+      background: white; border-radius: 12px; padding: 24px; width: 480px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    }
+    .img-edit-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--purple-dark); }
+    .img-edit-box label { font-size: 12px; font-weight: 600; color: var(--gray-500); display: block; margin-bottom: 6px; }
+    .img-edit-box input, .img-edit-box textarea {
+      width: 100%; padding: 8px 12px; border: 1.5px solid var(--gray-200); border-radius: 6px;
+      font-size: 13px; margin-bottom: 14px; outline: none;
+    }
+    .img-edit-box input:focus, .img-edit-box textarea:focus { border-color: var(--purple); }
+    .img-edit-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+
     .template-card {
       border: 1.5px solid var(--gray-200); border-radius: 10px; padding: 18px;
       cursor: pointer; transition: all .2s; background: white;
@@ -779,6 +813,26 @@
 <!-- ══════════════════════════════════════
      LOGIN MODAL
 ══════════════════════════════════════ -->
+<!-- IMG EDIT MODAL -->
+<div class="img-edit-modal" id="imgEditModal" style="display:none">
+  <div class="img-edit-box">
+    <h3>✏️ Editar bloco de imagem</h3>
+    <label>Imagem</label>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn btn-secondary" style="font-size:12px;flex:1" onclick="imgEditUpload()">📁 Selecionar arquivo</button>
+      <button class="btn btn-secondary" style="font-size:12px;flex:1" onclick="imgEditPaste()">📋 Colar da área de transferência</button>
+    </div>
+    <label>Legenda</label>
+    <input type="text" id="imgEditCaption" placeholder="Ex: Tela de configuração do sistema..." />
+    <label>Anotação (aparece abaixo da legenda)</label>
+    <textarea id="imgEditNote" rows="2" placeholder="Ex: Atenção: clique em Salvar após essa etapa."></textarea>
+    <div class="img-edit-actions">
+      <button class="btn btn-secondary" onclick="closeImgEdit()">Cancelar</button>
+      <button class="btn btn-primary" onclick="applyImgEdit()">Aplicar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TEMPLATE MODAL -->
 <div class="overlay hidden" id="templateOverlay" onclick="if(event.target===this)closeTemplateModal()">
   <div class="modal-box" style="max-width:640px;padding:0;overflow:hidden">
@@ -1354,6 +1408,84 @@ function saveArticle() {
   adminState.editingId = null;
 }
 
+// ── IMG BLOCK EDITOR ──
+let _currentImgBlock = null;
+let _imgEditSrc = null;
+
+function editImgBlock(fig) {
+  _currentImgBlock = fig;
+  _imgEditSrc = fig.querySelector('img') ? fig.querySelector('img').src : null;
+  const caption = fig.querySelector('.img-caption');
+  const note = fig.querySelector('.img-note');
+  document.getElementById('imgEditCaption').value = caption ? caption.textContent.replace('Legenda da imagem...','') : '';
+  document.getElementById('imgEditNote').value = note ? note.textContent : '';
+  document.getElementById('imgEditModal').style.display = 'flex';
+}
+
+function closeImgEdit() {
+  document.getElementById('imgEditModal').style.display = 'none';
+  _currentImgBlock = null;
+  _imgEditSrc = null;
+}
+
+function imgEditUpload() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*';
+  input.onchange = e => {
+    const reader = new FileReader();
+    reader.onload = ev => { _imgEditSrc = ev.target.result; };
+    reader.readAsDataURL(e.target.files[0]);
+  };
+  input.click();
+}
+
+function imgEditPaste() {
+  navigator.clipboard.read().then(items => {
+    for (const item of items) {
+      const imgType = item.types.find(t => t.startsWith('image/'));
+      if (imgType) {
+        item.getType(imgType).then(blob => {
+          const reader = new FileReader();
+          reader.onload = ev => { _imgEditSrc = ev.target.result; toast('Imagem colada!','success'); };
+          reader.readAsDataURL(blob);
+        });
+        return;
+      }
+    }
+    toast('Nenhuma imagem encontrada na área de transferência.','error');
+  }).catch(() => toast('Permissão negada. Use Ctrl+V dentro do editor.','error'));
+}
+
+function applyImgEdit() {
+  if (!_currentImgBlock) return;
+  const caption = document.getElementById('imgEditCaption').value.trim();
+  const note = document.getElementById('imgEditNote').value.trim();
+
+  if (_imgEditSrc) {
+    let img = _currentImgBlock.querySelector('img');
+    const placeholder = _currentImgBlock.querySelector('.img-placeholder');
+    if (!img) {
+      img = document.createElement('img');
+      img.style.cssText = 'width:100%;display:block;border-bottom:2px solid #111';
+      if (placeholder) placeholder.replaceWith(img);
+      else _currentImgBlock.insertBefore(img, _currentImgBlock.firstChild);
+    }
+    img.src = _imgEditSrc;
+  }
+
+  let capEl = _currentImgBlock.querySelector('.img-caption');
+  if (!capEl) { capEl = document.createElement('figcaption'); capEl.className = 'img-caption'; _currentImgBlock.appendChild(capEl); }
+  capEl.textContent = caption || 'Legenda da imagem...';
+
+  let noteEl = _currentImgBlock.querySelector('.img-note');
+  if (note) {
+    if (!noteEl) { noteEl = document.createElement('div'); noteEl.className = 'img-note'; noteEl.style.cssText = 'padding:6px 12px;font-size:12px;color:#b45309;background:#fffbeb;border-top:1px solid #fde68a'; _currentImgBlock.appendChild(noteEl); }
+    noteEl.textContent = '⚠️ ' + note;
+  } else if (noteEl) { noteEl.remove(); }
+
+  closeImgEdit();
+}
+
 // ── TEMPLATES ──
 const TEMPLATES = {
   'passo-a-passo': {
@@ -1362,7 +1494,7 @@ const TEMPLATES = {
   },
   'tutorial-imagens': {
     title: 'Tutorial: [título aqui]',
-    content: `<h1>Tutorial: [título aqui]</h1><p>Introdução breve sobre o que este tutorial ensina.</p><h2>1. [Etapa inicial]</h2><p>Descreva a etapa aqui.</p><p><em>[Insira uma imagem aqui — use o botão 🖼️ na toolbar ou Ctrl+V para colar uma print]</em></p><h2>2. [Próxima etapa]</h2><p>Descreva a etapa aqui.</p><p><em>[Insira uma imagem aqui]</em></p><h2>3. [Etapa final]</h2><p>Descreva a etapa aqui.</p><p><em>[Insira uma imagem aqui]</em></p><h2>Resultado</h2><p>Descreva o resultado esperado.</p>`
+    content: `<h1>Tutorial: [título aqui]</h1><p>Introdução breve sobre o que este tutorial ensina.</p><h2>1. [Etapa inicial]</h2><p>Descreva a etapa aqui.</p><figure class="img-block" onclick="editImgBlock(this)"><div class="img-placeholder"><svg width="32" height="32" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg><span>Clique para inserir imagem</span></div><figcaption class="img-caption" contenteditable="false">Legenda da imagem...</figcaption></figure><h2>2. [Próxima etapa]</h2><p>Descreva a etapa aqui.</p><figure class="img-block" onclick="editImgBlock(this)"><div class="img-placeholder"><svg width="32" height="32" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg><span>Clique para inserir imagem</span></div><figcaption class="img-caption" contenteditable="false">Legenda da imagem...</figcaption></figure><h2>3. [Etapa final]</h2><p>Descreva a etapa aqui.</p><figure class="img-block" onclick="editImgBlock(this)"><div class="img-placeholder"><svg width="32" height="32" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg><span>Clique para inserir imagem</span></div><figcaption class="img-caption" contenteditable="false">Legenda da imagem...</figcaption></figure><h2>Resultado</h2><p>Descreva o resultado esperado.</p>`
   },
   'faq': {
     title: 'Perguntas Frequentes — [tema]',
